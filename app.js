@@ -160,6 +160,7 @@ function navigate(view, skipPush) {
   const el = document.getElementById('view-' + view);
   if (el) el.classList.add('active');
   currentView = view;
+  document.body.classList.toggle('in-game', view === 'game-play');
 
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const navMap = { dashboard: 0, dictionary: 1, games: 2, stats: 3 };

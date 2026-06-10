@@ -309,7 +309,7 @@ body {
 .game-input-row input:focus { border-color: var(--md-primary); }
 .game-input-row .btn { padding: 12px 20px; }
 
-.word-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.word-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; max-height: 26vh; overflow-y: auto; align-content: flex-start; }
 .word-tag {
   padding: 6px 12px; border-radius: 20px; font-size: .8rem; font-weight: 500;
   background: var(--md-primary-container); color: var(--md-on-primary-container);
@@ -378,6 +378,32 @@ body {
   transition: width 1s linear;
 }
 .timer-bar-fill.low { background: var(--md-error); }
+
+/* ---- IN-GAME MODE (hide nav, reclaim space) ---- */
+body.in-game #bottom-nav { display: none; }
+body.in-game .view { padding-bottom: 16px; }
+
+/* Compact game layout when the on-screen keyboard shrinks the viewport */
+@media (max-height: 620px) {
+  #view-game-play { padding-top: 8px; }
+  #view-game-play .game-header { margin-bottom: 8px; }
+  #view-game-play .timer { font-size: .95rem; padding: 6px 12px; }
+  #view-game-play .timer .material-icons-round { font-size: 16px; }
+  #view-game-play .score-display { font-size: .95rem; padding: 6px 12px; }
+  #view-game-play .timer-bar { margin-bottom: 8px; }
+  #view-game-play .game-prompt { padding: 8px 12px; margin-bottom: 8px; }
+  #view-game-play .game-prompt .prompt-label { font-size: .7rem; margin-bottom: 2px; }
+  #view-game-play .game-prompt .prompt-word { font-size: 1.25rem; }
+  #view-game-play .game-prompt .prompt-image { font-size: 2rem; margin: 2px 0; }
+  #view-game-play .game-prompt .prompt-hint { font-size: .7rem; margin-top: 2px; }
+  #view-game-play .game-input-row { margin-bottom: 8px; }
+  #view-game-play .game-input-row input { padding: 10px 14px; }
+  #view-game-play .game-input-row .btn { padding: 10px 16px; }
+  #view-game-play .az-progress { gap: 3px; margin-bottom: 8px; }
+  #view-game-play .az-letter { width: 22px; height: 22px; font-size: .6rem; }
+  #view-game-play .word-tags { max-height: 18vh; }
+  #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem; }
+}
 
 /* ---- DEV CREDIT ---- */
 .dev-credit {
