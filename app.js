@@ -636,6 +636,10 @@ function startGame(type) {
   const input = document.getElementById('game-input');
   document.getElementById('game-submit')?.addEventListener('click', () => submitGameWord());
   input?.addEventListener('keydown', e => { if (e.key === 'Enter') submitGameWord(); });
+  // When the keyboard opens, scroll back to the top so timer + prompt stay visible
+  input?.addEventListener('focus', () => {
+    setTimeout(() => { updateCompactMode(); window.scrollTo({ top: 0 }); }, 300);
+  });
   setTimeout(() => input?.focus(), 300);
 
   startGameTimer();
@@ -788,6 +792,17 @@ async function endGame(cancelled) {
   document.getElementById('game-exit')?.addEventListener('click', () => navigate('games'));
 }
 
+// ===================== MOBILE KEYBOARD HANDLING =====================
+function updateCompactMode() {
+  const vv = window.visualViewport;
+  const h = Math.min(window.innerHeight, vv ? vv.height : Infinity);
+  document.body.classList.toggle('kb-compact', h < 620);
+  // Keep the timer and prompt in view while the keyboard is open
+  if (currentView === 'game-play' && h < 620) window.scrollTo(0, 0);
+}
+window.addEventListener('resize', updateCompactMode);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', updateCompactMode);
+
 // ===================== UTILITY =====================
 function formatDate(iso) {
   const d = new Date(iso);
@@ -807,9 +822,24 @@ async function init() {
   allWords = await dbGetAll('words');
 
   navigate('dashboard');
+  updateCompactMode();
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(reg => {
+        // Check for a new version every time the app is opened or foregrounded
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        });
+      })
+      .catch(() => {});
+
+    // When a new service worker takes over, reload once to pick up new files
+    let hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController) { hadController = true; return; }
+      window.location.reload();
+    });
   }
 }
 

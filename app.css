@@ -383,27 +383,27 @@ body {
 body.in-game #bottom-nav { display: none; }
 body.in-game .view { padding-bottom: 16px; }
 
-/* Compact game layout when the on-screen keyboard shrinks the viewport */
-@media (max-height: 620px) {
-  #view-game-play { padding-top: 8px; }
-  #view-game-play .game-header { margin-bottom: 8px; }
-  #view-game-play .timer { font-size: .95rem; padding: 6px 12px; }
-  #view-game-play .timer .material-icons-round { font-size: 16px; }
-  #view-game-play .score-display { font-size: .95rem; padding: 6px 12px; }
-  #view-game-play .timer-bar { margin-bottom: 8px; }
-  #view-game-play .game-prompt { padding: 8px 12px; margin-bottom: 8px; }
-  #view-game-play .game-prompt .prompt-label { font-size: .7rem; margin-bottom: 2px; }
-  #view-game-play .game-prompt .prompt-word { font-size: 1.25rem; }
-  #view-game-play .game-prompt .prompt-image { font-size: 2rem; margin: 2px 0; }
-  #view-game-play .game-prompt .prompt-hint { font-size: .7rem; margin-top: 2px; }
-  #view-game-play .game-input-row { margin-bottom: 8px; }
-  #view-game-play .game-input-row input { padding: 10px 14px; }
-  #view-game-play .game-input-row .btn { padding: 10px 16px; }
-  #view-game-play .az-progress { gap: 3px; margin-bottom: 8px; }
-  #view-game-play .az-letter { width: 22px; height: 22px; font-size: .6rem; }
-  #view-game-play .word-tags { max-height: 18vh; }
-  #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem; }
-}
+/* Compact game layout when the on-screen keyboard shrinks the visible area.
+   body.kb-compact is toggled from JS using visualViewport height, which works
+   on all mobile browsers regardless of keyboard resize behavior. */
+body.kb-compact #view-game-play { padding-top: 8px; }
+body.kb-compact #view-game-play .game-header { margin-bottom: 8px; }
+body.kb-compact #view-game-play .timer { font-size: .95rem; padding: 6px 12px; }
+body.kb-compact #view-game-play .timer .material-icons-round { font-size: 16px; }
+body.kb-compact #view-game-play .score-display { font-size: .95rem; padding: 6px 12px; }
+body.kb-compact #view-game-play .timer-bar { margin-bottom: 8px; }
+body.kb-compact #view-game-play .game-prompt { padding: 8px 12px; margin-bottom: 8px; }
+body.kb-compact #view-game-play .game-prompt .prompt-label { font-size: .7rem; margin-bottom: 2px; }
+body.kb-compact #view-game-play .game-prompt .prompt-word { font-size: 1.25rem; }
+body.kb-compact #view-game-play .game-prompt .prompt-image { font-size: 2rem; margin: 2px 0; }
+body.kb-compact #view-game-play .game-prompt .prompt-hint { font-size: .7rem; margin-top: 2px; }
+body.kb-compact #view-game-play .game-input-row { margin-bottom: 8px; }
+body.kb-compact #view-game-play .game-input-row input { padding: 10px 14px; }
+body.kb-compact #view-game-play .game-input-row .btn { padding: 10px 16px; }
+body.kb-compact #view-game-play .az-progress { gap: 3px; margin-bottom: 8px; }
+body.kb-compact #view-game-play .az-letter { width: 22px; height: 22px; font-size: .6rem; }
+body.kb-compact #view-game-play .word-tags { max-height: 18vh; }
+body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem; }
 
 /* ---- DEV CREDIT ---- */
 .dev-credit {
