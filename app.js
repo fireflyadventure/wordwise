@@ -86,6 +86,15 @@ const IMAGE_PROMPTS = [
 
 const MAKER_WORDS = ["extraordinary","comfortable","dictionary","wonderful","butterfly","beautiful","adventure","knowledge","education","celebrate","happiness","wonderful","landscape","brilliant","discovery","incredible","experience","understand","strawberry","generation"];
 
+// 2-3 element photo themes that give learners plenty to describe
+const PHOTO_THEMES = [
+  ['dog', 'park'], ['cat', 'window'], ['children', 'playing'], ['market', 'fruit'],
+  ['rain', 'umbrella', 'street'], ['beach', 'family'], ['train', 'station'], ['kitchen', 'cooking'],
+  ['bird', 'tree'], ['bicycle', 'street'], ['boat', 'river'], ['horse', 'field'],
+  ['flowers', 'garden'], ['snow', 'mountain'], ['coffee', 'book'], ['football', 'children'],
+  ['bridge', 'city', 'night'], ['farmer', 'field'], ['musician', 'street'], ['temple', 'people']
+];
+
 const COMMON_WORDS = new Set(["the","of","and","a","to","in","is","it","that","was","for","on","are","with","as","at","be","this","have","from","or","an","by","not","but","what","all","were","when","we","there","can","had","one","each","which","do","how","if","will","up","other","about","out","many","then","them","her","like","so","these","its","would","make","has","him","two","more","no","time","very","your","could","over","such","after","use","into","just","also","any","may","some","than","new","you","way","who","did","get","my","been","now","long","come","made","find","day","most","part","take","got","know","run","see","set","well","back","big","end","put","old","too","same","tell","does","where","hand","high","keep","last","let","say","great","help","low","line","turn","move","live","real","left","far","lot","kind","go","give","good","much","still","own","work","try","ask","men","our","even","right","look","here","thing","why","came","want","call","need","house","sure","head","body","room","name","feel","play","small","home","read","off","big","saw","went","year","few","once","told","open","seem","next","walk","begin","grow","both","city","hard","book","bit","door","best","miss","plan","hour","game","food","land","rest","free","full","life","side","able","hold","pull","pick","flat","drop","lead","done","bring","close","stay","stand","fall","hope","learn","write","black","eat","leave","idea","note","late","less","main","fine","girl","stop","fish","mark","river","send","dark","point","sea","star","draw","tree","form","fact","hear","love","word","act","deal","true","care","deep","step","fast","test","ball","air","wide","pass","nice","age","rose","shop","ring","fire","area","east","art","west","fill","key","lay","poor","top","add","cup","cut","fit","hot","job","sad","sit","bit","dry","mix","nor","eat","bar","sky","tie","won","own","age","act","bed","bit","box","bus","buy","cry","cup","dog","ear","eat","egg","end","far","fee","fit","fly","fun","gas","got","gun","hat","hit","hot","ice","job","key","kid","lay","leg","lie","lip","map","net","nor","odd","oil","pop","raw","row","sad","saw","sir","sit","six","son","sum","tea","ten","tip","top","toy","try","van","via","war","win","won","yes","yet","age","aid","aim","air","arm","art","bag","ban","bar","bat","bay","bed","bet","bid","bit","bow","box","bug","bus","buy","cab","cap","cat","cop","cow","cry","cup","cut","dad","dam","dig","dip","dot","due","dug","dye","era","fan","fat","fed","fee","few","fig","fin","fly","fog","for","fox","fur","gap","gay","god","got","gum","gun","gut","gym","hat","hay","hen","hid","him","hip","hit","hog","hop","hot","hub","hug","hut","ice","ill","ink","inn","ion","jam","jar","jaw","jet","joy","jug","key","kid","kit","lab","lad","lag","lap","law","lay","leg","lid","lie","lip","log","lot","low","mad","man","map","mat","may","mix","mob","mod","mom","mop","mud","mug","nap","net","new","nod","nor","not","now","nun","nut","oak","odd","oil","old","one","ore","our","out","owe","owl","own","pad","pan","pat","paw","pay","pea","peg","pen","per","pet","pie","pig","pin","pit","pod","pop","pot","pub","pug","pun","pup","put","rag","ram","ran","rat","raw","ray","red","ref","rib","rid","rim","rip","rod","rot","row","rub","rug","run","rut","sad","sag","sap","sat","saw","say","sea","set","sew","shy","sin","sip","sir","sis","sit","six","ski","sky","sly","sob","sod","son","sop","sow","spa","spy","sum","sun","tab","tad","tag","tan","tap","tar","tax","tea","ten","the","tie","tin","tip","toe","ton","too","top","tow","toy","try","tub","tug","two","urn","use","van","vat","vet","via","vow","wag","war","was","wax","way","web","wed","wet","who","why","wig","win","wit","woe","wok","won","woo","wow","yam","yap","yaw","yes","yet","yew","you","zap","zen","zip","zoo","able","also","area","army","away","baby","back","ball","band","bank","base","bath","bear","beat","been","bell","belt","bend","best","bill","bird","bite","blow","blue","boat","body","bomb","bond","bone","book","born","boss","both","burn","busy","call","calm","came","camp","card","care","case","cash","cast","cell","chat","chip","city","club","coal","coat","code","cold","come","cook","cool","copy","core","cost","crew","crop","cure","dare","dark","data","date","dawn","dead","deaf","deal","dear","debt","deck","deep","deer","diet","dirt","dish","disk","dock","does","done","door","dose","down","draw","drew","drop","drum","dual","duke","dumb","dump","dust","duty","each","earn","ease","east","easy","edge","else","even","ever","evil","exam","exit","face","fact","fade","fail","fair","fall","fame","farm","fast","fate","fear","feed","feel","feet","fell","file","fill","film","find","fine","fire","firm","fish","flag","flat","fled","flew","flip","flow","folk","font","food","fool","foot","ford","fore","fork","form","fort","foul","four","free","from","fuel","full","fund","fury","fuse","gain","game","gang","gate","gave","gaze","gear","gene","gift","girl","give","glad","glow","glue","goat","goes","gold","golf","gone","good","grab","gray","grew","grey","grid","grin","grip","grow","gulf","gust","guys","hair","half","hall","halt","hand","hang","hard","harm","hate","have","head","heal","heap","hear","heat","heel","held","help","here","hero","hide","high","hike","hill","hint","hire","hold","hole","holy","home","hook","hope","horn","host","huge","hung","hunt","hurt","idea","inch","into","iron","item","jack","jail","jean","joke","jump","jury","just","keen","keep","kept","kick","kids","kill","kind","king","knee","knew","knit","knot","know","lack","lady","laid","lake","lamp","land","lane","last","late","lawn","lead","leaf","lean","left","lend","lens","less","liar","lick","life","lift","like","limb","lime","limp","line","link","lion","list","live","load","loan","lock","loft","logo","lone","long","look","loop","lord","lose","loss","lost","lots","loud","love","luck","lump","lung","made","mail","main","make","male","mall","many","mark","mass","mate","math","meal","mean","meat","meet","melt","memo","menu","mere","mess","mild","mile","milk","mill","mind","mine","miss","mode","mood","moon","more","most","move","much","must","myth","nail","name","navy","neat","neck","need","nest","news","next","nine","node","none","noon","norm","nose","note","noun","odds","okay","once","only","onto","open","oral","ours","oven","over","pace","pack","page","paid","pain","pair","pale","palm","pant","park","part","pass","past","path","peak","peer","pick","pile","pine","pink","pipe","plan","play","plea","plot","plug","plus","poem","poet","poll","pond","pool","poor","pope","pork","port","pose","post","pour","pray","pull","pump","pure","push","quit","race","rack","rage","rail","rain","rank","rare","rate","read","real","rear","rely","rent","rest","rice","rich","ride","ring","riot","rise","risk","road","roam","rock","rode","role","roll","roof","room","root","rope","rose","rough","round","route","rude","ruin","rule","rush","sack","safe","sage","said","sake","sale","salt","same","sand","sang","sank","save","seal","seat","seed","seek","seem","seen","self","sell","send","sent","shed","shin","ship","shock","shoe","shook","shop","shore","short","shot","show","shut","sick","side","sigh","sign","silk","sing","sink","site","size","skin","skip","slam","slap","slip","slot","slow","snap","snow","soak","soar","sock","soft","soil","sold","sole","some","song","soon","sort","soul","sour","spin","spit","spot","star","stay","stem","step","stir","stop","such","suit","sure","swap","swim","tail","take","tale","talk","tall","tank","tape","task","team","tear","tell","tend","tent","term","test","text","than","that","them","then","they","thin","this","tick","tide","tidy","tied","till","time","tiny","tire","toes","told","toll","tone","took","tool","tops","tore","torn","tour","town","trap","tray","tree","trim","trio","trip","true","tube","tuck","tuna","tune","turn","twin","type","ugly","undo","unit","upon","urge","used","user","uses","vain","vast","verb","very","vice","view","vine","void","vote","wage","wait","wake","walk","wall","want","ward","warm","warn","wash","wave","weak","wear","weed","week","well","went","were","west","what","when","whom","wide","wife","wild","will","wind","wine","wing","wire","wise","wish","with","woke","wolf","wood","wool","word","wore","work","worm","worn","wrap","yard","yeah","year","yoga","zero","zone"]);
 
 // ===================== DATABASE =====================
@@ -153,6 +162,39 @@ let gameTimeLeft = 300;
 let gameScore = 0;
 let gameWords = [];
 let gameState = {};
+
+// ===================== GAME PHOTO =====================
+function loadGamePhoto() {
+  const photo = document.getElementById('prompt-photo');
+  const themeLabel = document.getElementById('image-theme');
+  if (!photo) return;
+
+  const combo = PHOTO_THEMES[Math.floor(Math.random() * PHOTO_THEMES.length)];
+  const lock = Math.floor(Math.random() * 100000);
+  gameState.photoCombo = combo;
+
+  photo.dataset.retry = '0';
+  photo.classList.remove('hidden');
+  document.getElementById('emoji-fallback')?.classList.add('hidden');
+  themeLabel.textContent = 'Loading picture...';
+
+  photo.onload = () => {
+    themeLabel.textContent = combo.map(w => w[0].toUpperCase() + w.slice(1)).join(' & ');
+  };
+  photo.onerror = () => {
+    if (photo.dataset.retry === '0') {
+      // Strict all-keywords match failed; retry with a looser match
+      photo.dataset.retry = '1';
+      photo.src = `https://loremflickr.com/600/380/${combo.join(',')}?lock=${lock + 1}`;
+    } else {
+      // Offline or no results: fall back to the emoji scene
+      photo.classList.add('hidden');
+      document.getElementById('emoji-fallback')?.classList.remove('hidden');
+      themeLabel.textContent = gameState.imagePrompt.theme;
+    }
+  };
+  photo.src = `https://loremflickr.com/600/380/${combo.join(',')}/all?lock=${lock}`;
+}
 
 // ===================== WORD HELPERS =====================
 function canMakeFrom(word, letters) {
@@ -608,11 +650,15 @@ function startGame(type) {
   } else if (type === 'image') {
     const prompt = IMAGE_PROMPTS[Math.floor(Math.random() * IMAGE_PROMPTS.length)];
     gameState.imagePrompt = prompt;
-    const seed = Date.now() % 100000;
     area.innerHTML = `
       <div class="game-prompt">
-        <div class="prompt-label" id="image-theme">What do you see?</div>
-        <img class="prompt-photo" id="prompt-photo" alt="Mystery picture" src="https://picsum.photos/seed/${seed}/600/380">
+        <div class="prompt-top">
+          <div class="prompt-label" id="image-theme">Loading picture...</div>
+          <button class="shuffle-btn" id="shuffle-img" title="Change picture">
+            <span class="material-icons-round">shuffle</span>
+          </button>
+        </div>
+        <img class="prompt-photo" id="prompt-photo" alt="Picture to describe">
         <div class="prompt-image hidden" id="emoji-fallback">${prompt.emoji}</div>
         <div class="prompt-hint">Type words about this picture - objects, colors, feelings</div>
       </div>
@@ -621,13 +667,8 @@ function startGame(type) {
         <button class="btn btn-primary" id="game-submit"><span class="material-icons-round">send</span></button>
       </div>
       <div class="word-tags" id="game-tags"></div>`;
-    // Offline fallback: swap to an emoji scene if the photo can't load
-    const photo = document.getElementById('prompt-photo');
-    photo.onerror = () => {
-      photo.classList.add('hidden');
-      document.getElementById('emoji-fallback').classList.remove('hidden');
-      document.getElementById('image-theme').textContent = prompt.theme;
-    };
+    document.getElementById('shuffle-img').addEventListener('click', loadGamePhoto);
+    loadGamePhoto();
   } else if (type === 'maker') {
     const source = MAKER_WORDS[Math.floor(Math.random() * MAKER_WORDS.length)];
     gameState.sourceWord = source;

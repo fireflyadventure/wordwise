@@ -303,8 +303,21 @@ body {
 .game-prompt .prompt-photo {
   width: 100%; max-height: 220px; object-fit: cover;
   border-radius: var(--md-radius-md); margin: 8px 0;
-  background: var(--md-surface-cv);
+  background: var(--md-surface-cv); min-height: 120px;
 }
+.prompt-top {
+  display: flex; align-items: center; justify-content: center;
+  position: relative; min-height: 36px;
+}
+.shuffle-btn {
+  position: absolute; right: 0; top: 0;
+  width: 36px; height: 36px; border-radius: 50%; border: none;
+  background: var(--md-primary-container); color: var(--md-on-primary-container);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: .15s;
+}
+.shuffle-btn:active { transform: rotate(180deg) scale(.9); }
+.shuffle-btn .material-icons-round { font-size: 20px; }
 
 .game-input-row {
   display: flex; gap: 8px; margin-bottom: 16px;
