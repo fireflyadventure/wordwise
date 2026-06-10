@@ -812,16 +812,12 @@ async function endGame(cancelled) {
   const tm = Math.floor(timeTaken / 60);
   const ts = timeTaken % 60;
 
-  let makerReveal = '';
+  let makerStat = '';
   if (game === 'maker' && gameState.possibleWords?.length) {
-    const found = new Set(gameState.foundWords || []);
-    makerReveal = `
-      <div class="card" style="text-align:left">
-        <div class="card-title"><span class="material-icons-round">lightbulb</span>
-          All ${gameState.possibleWords.length} possible words (you found ${found.size})</div>
-        <div class="word-tags reveal">
-          ${gameState.possibleWords.map(w => `<span class="word-tag ${found.has(w) ? '' : 'missed'}">${w}</span>`).join('')}
-        </div>
+    makerStat = `
+      <div class="go-stat">
+        <div class="go-num">${(gameState.foundWords || []).length}/${gameState.possibleWords.length}</div>
+        <div class="go-label">Possible Words</div>
       </div>`;
   }
 
@@ -836,6 +832,7 @@ async function endGame(cancelled) {
           <div class="go-num">${gameWords.length}</div>
           <div class="go-label">Total Words</div>
         </div>
+        ${makerStat}
         <div class="go-stat">
           <div class="go-num">${tm}:${String(ts).padStart(2, '0')}</div>
           <div class="go-label">Time Taken</div>
@@ -843,7 +840,6 @@ async function endGame(cancelled) {
       </div>
       <button class="btn btn-primary" id="game-retry"><span class="material-icons-round">replay</span> Play Again</button>
       <button class="btn btn-outline" id="game-exit"><span class="material-icons-round">home</span> Back to Games</button>
-      ${makerReveal}
     </div>`;
 
   document.getElementById('game-retry')?.addEventListener('click', () => startGame(game));

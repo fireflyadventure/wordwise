@@ -325,8 +325,6 @@ body {
 }
 @keyframes popIn { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .word-tag.invalid { background: #FDDEDE; color: var(--md-error); }
-.word-tag.missed { background: var(--md-surface-cv); color: var(--md-on-surface-var); }
-.word-tags.reveal { max-height: none; overflow: visible; }
 
 /* Game Over */
 .game-over {
@@ -338,13 +336,13 @@ body {
 .game-over .final-label { font-size: .85rem; color: var(--md-on-surface-var); margin-bottom: 20px; }
 .game-over .btn { margin: 6px; }
 .go-stats {
-  display: flex; gap: 12px; justify-content: center; margin-bottom: 24px;
+  display: flex; gap: 10px; justify-content: center; margin-bottom: 24px;
 }
 .go-stat {
-  background: #FFF; border-radius: var(--md-radius-md); padding: 14px 24px;
-  box-shadow: 0 1px 4px var(--md-shadow); min-width: 120px;
+  background: #FFF; border-radius: var(--md-radius-md); padding: 14px 10px;
+  box-shadow: 0 1px 4px var(--md-shadow); flex: 1; max-width: 140px;
 }
-.go-stat .go-num { font-size: 1.5rem; font-weight: 700; color: var(--md-tertiary); }
+.go-stat .go-num { font-size: 1.4rem; font-weight: 700; color: var(--md-tertiary); }
 .go-stat .go-label { font-size: .7rem; color: var(--md-on-surface-var); margin-top: 2px; }
 
 /* A-Z Progress */
