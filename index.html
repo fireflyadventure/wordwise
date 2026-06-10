@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#2E7D52">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>WordWise</title>
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- ============ DASHBOARD ============ -->
+<section id="view-dashboard" class="view active">
+  <div class="top-bar">
+    <div>
+      <h1 id="greeting">Good Morning!</h1>
+      <span class="subtitle" id="greeting-sub">Let's learn something new today</span>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-box"><div class="stat-num" id="stat-today">0</div><div class="stat-label">Today</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-month">0</div><div class="stat-label">This Month</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="material-icons-round">auto_stories</span> Today's 5 Words</div>
+    <div id="daily-words"></div>
+  </div>
+
+  <div class="card mt-16">
+    <div class="card-title"><span class="material-icons-round">trending_up</span> Recent Activity</div>
+    <div id="recent-activity"></div>
+  </div>
+</section>
+
+<!-- ============ DICTIONARY ============ -->
+<section id="view-dictionary" class="view">
+  <div class="top-bar">
+    <h1>My Dictionary</h1>
+    <span class="word-count-badge" id="dict-count">0</span>
+  </div>
+  <div class="search-bar">
+    <span class="material-icons-round">search</span>
+    <input type="text" id="dict-search" placeholder="Search words..." autocomplete="off">
+  </div>
+  <div id="dict-list"></div>
+  <button class="fab" id="fab-add" aria-label="Add word">
+    <span class="material-icons-round">add</span>
+  </button>
+</section>
+
+<!-- ============ WORD DETAIL ============ -->
+<section id="view-detail" class="view">
+  <div class="top-bar">
+    <button class="icon-btn" id="detail-back"><span class="material-icons-round">arrow_back</span></button>
+    <h1>Word Detail</h1>
+    <button class="icon-btn" id="detail-delete"><span class="material-icons-round">delete_outline</span></button>
+  </div>
+  <div id="detail-content"></div>
+</section>
+
+<!-- ============ GAMES ============ -->
+<section id="view-games" class="view">
+  <div class="top-bar"><h1>Fun Zone</h1></div>
+  <p style="font-size:.85rem;color:var(--md-on-surface-var);margin-bottom:16px;">Challenge yourself! 5 minutes per game.</p>
+  <div class="game-grid">
+    <div class="game-card" data-game="chain">
+      <span class="material-icons-round">link</span>
+      <h3>Word Chain</h3>
+      <p>Next word starts with last letter</p>
+      <div class="high-score" id="hs-chain"></div>
+    </div>
+    <div class="game-card" data-game="image">
+      <span class="material-icons-round">image</span>
+      <h3>Picture Words</h3>
+      <p>Type words from the image</p>
+      <div class="high-score" id="hs-image"></div>
+    </div>
+    <div class="game-card" data-game="maker">
+      <span class="material-icons-round">extension</span>
+      <h3>Word Maker</h3>
+      <p>Make words from letters</p>
+      <div class="high-score" id="hs-maker"></div>
+    </div>
+    <div class="game-card" data-game="az">
+      <span class="material-icons-round">sort_by_alpha</span>
+      <h3>A-Z Sprint</h3>
+      <p>5 words per letter</p>
+      <div class="high-score" id="hs-az"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GAME PLAY ============ -->
+<section id="view-game-play" class="view">
+  <div class="game-header">
+    <button class="icon-btn" id="game-back"><span class="material-icons-round">arrow_back</span></button>
+    <div class="timer" id="game-timer">
+      <span class="material-icons-round">timer</span>
+      <span id="timer-text">5:00</span>
+    </div>
+    <div class="score-display">Score: <span id="game-score">0</span></div>
+  </div>
+  <div class="timer-bar"><div class="timer-bar-fill" id="timer-bar-fill"></div></div>
+  <div id="game-area"></div>
+</section>
+
+<!-- ============ STATS ============ -->
+<section id="view-stats" class="view">
+  <div class="top-bar"><h1>Progress</h1></div>
+
+  <div class="stats-total">
+    <span class="material-icons-round">emoji_events</span>
+    <div>
+      <div class="stats-total-num" id="stats-all-total">0</div>
+      <div class="stats-total-label">Words Collected</div>
+    </div>
+  </div>
+
+  <div class="chip-row" id="stats-period">
+    <button class="chip active" data-period="week">This Week</button>
+    <button class="chip" data-period="month">This Month</button>
+    <button class="chip" data-period="year">This Year</button>
+  </div>
+
+  <div class="chart-wrap">
+    <div class="bar-chart" id="stats-chart"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="material-icons-round">calendar_today</span> Milestones</div>
+    <div id="milestones"></div>
+  </div>
+</section>
+
+<!-- ============ ADD WORD MODAL ============ -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2>Add New Word</h2>
+    <div class="input-wrap">
+      <input type="text" id="add-word-input" placeholder=" " autocomplete="off" autocapitalize="none">
+      <label>English Word</label>
+    </div>
+    <p id="add-word-status" style="font-size:.8rem;color:var(--md-on-surface-var);margin-bottom:12px;min-height:20px;"></p>
+    <div class="flex-between">
+      <button class="btn btn-outline" id="add-cancel">Cancel</button>
+      <button class="btn btn-primary" id="add-save">
+        <span class="material-icons-round">add</span> Add Word
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav id="bottom-nav">
+  <button class="nav-item active" data-view="dashboard">
+    <span class="icon-wrap"><span class="material-icons-round">home</span></span>
+    <span>Home</span>
+  </button>
+  <button class="nav-item" data-view="dictionary">
+    <span class="icon-wrap"><span class="material-icons-round">menu_book</span></span>
+    <span>Dictionary</span>
+  </button>
+  <button class="nav-item" data-view="games">
+    <span class="icon-wrap"><span class="material-icons-round">sports_esports</span></span>
+    <span>Fun</span>
+  </button>
+  <button class="nav-item" data-view="stats">
+    <span class="icon-wrap"><span class="material-icons-round">bar_chart</span></span>
+    <span>Progress</span>
+  </button>
+</nav>
+
+<!-- SNACKBAR -->
+<div class="snackbar" id="snackbar"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
