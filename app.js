@@ -813,11 +813,23 @@ async function endGame(cancelled) {
   const ts = timeTaken % 60;
 
   let makerStat = '';
+  let makerReveal = '';
   if (game === 'maker' && gameState.possibleWords?.length) {
+    const found = new Set(gameState.foundWords || []);
     makerStat = `
       <div class="go-stat">
-        <div class="go-num">${(gameState.foundWords || []).length}/${gameState.possibleWords.length}</div>
+        <div class="go-num">${found.size}/${gameState.possibleWords.length}</div>
         <div class="go-label">Possible Words</div>
+      </div>`;
+    makerReveal = `
+      <button class="btn btn-tonal" id="reveal-words">
+        <span class="material-icons-round">visibility</span> See All ${gameState.possibleWords.length} Words
+      </button>
+      <div class="card hidden" id="reveal-list" style="text-align:left;margin-top:12px">
+        <div class="card-title"><span class="material-icons-round">lightbulb</span> Green = words you found</div>
+        <div class="word-tags reveal">
+          ${gameState.possibleWords.map(w => `<span class="word-tag ${found.has(w) ? '' : 'missed'}">${w}</span>`).join('')}
+        </div>
       </div>`;
   }
 
@@ -840,10 +852,15 @@ async function endGame(cancelled) {
       </div>
       <button class="btn btn-primary" id="game-retry"><span class="material-icons-round">replay</span> Play Again</button>
       <button class="btn btn-outline" id="game-exit"><span class="material-icons-round">home</span> Back to Games</button>
+      ${makerReveal ? `<div class="mt-8">${makerReveal}</div>` : ''}
     </div>`;
 
   document.getElementById('game-retry')?.addEventListener('click', () => startGame(game));
   document.getElementById('game-exit')?.addEventListener('click', () => navigate('games'));
+  document.getElementById('reveal-words')?.addEventListener('click', function () {
+    document.getElementById('reveal-list').classList.remove('hidden');
+    this.classList.add('hidden');
+  });
 }
 
 // ===================== PWA INSTALL =====================

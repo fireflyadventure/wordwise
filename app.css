@@ -325,6 +325,8 @@ body {
 }
 @keyframes popIn { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .word-tag.invalid { background: #FDDEDE; color: var(--md-error); }
+.word-tag.missed { background: var(--md-surface-cv); color: var(--md-on-surface-var); }
+.word-tags.reveal { max-height: none; overflow: visible; }
 
 /* Game Over */
 .game-over {
