@@ -362,9 +362,11 @@ body {
   transform: translateX(-50%) translateY(80px); padding: 12px 24px;
   background: var(--md-on-surface); color: var(--md-surface);
   border-radius: var(--md-radius-sm); font-size: .85rem; font-weight: 500;
-  z-index: 300; transition: transform .3s ease; white-space: nowrap;
+  z-index: 300; white-space: nowrap;
+  opacity: 0; visibility: hidden;
+  transition: transform .3s ease, opacity .3s ease, visibility .3s;
 }
-.snackbar.show { transform: translateX(-50%) translateY(0); }
+.snackbar.show { transform: translateX(-50%) translateY(0); opacity: 1; visibility: visible; }
 
 /* ---- PROGRESS BAR (timer visual) ---- */
 .timer-bar {
