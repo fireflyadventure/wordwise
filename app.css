@@ -377,6 +377,14 @@ body {
 }
 .timer-bar-fill.low { background: var(--md-error); }
 
+/* ---- DEV CREDIT ---- */
+.dev-credit {
+  text-align: center;
+  font-size: .75rem;
+  color: var(--md-on-surface-var);
+  padding: 24px 0 4px;
+}
+
 /* ---- UTILITY ---- */
 .mt-8 { margin-top: 8px; }
 .mt-16 { margin-top: 16px; }
