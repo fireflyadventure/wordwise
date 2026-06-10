@@ -297,6 +297,9 @@ body {
 .game-prompt .prompt-word { font-size: 1.8rem; font-weight: 700; color: var(--md-primary); }
 .game-prompt .prompt-hint { font-size: .8rem; color: var(--md-on-surface-var); margin-top: 6px; }
 .game-prompt .prompt-image { font-size: 4rem; margin: 8px 0; }
+.game-prompt .prompt-progress {
+  font-size: .8rem; font-weight: 700; color: var(--md-primary); margin-top: 8px;
+}
 .game-prompt .prompt-photo {
   width: 100%; max-height: 220px; object-fit: cover;
   border-radius: var(--md-radius-md); margin: 8px 0;
@@ -322,6 +325,8 @@ body {
 }
 @keyframes popIn { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .word-tag.invalid { background: #FDDEDE; color: var(--md-error); }
+.word-tag.missed { background: var(--md-surface-cv); color: var(--md-on-surface-var); }
+.word-tags.reveal { max-height: none; overflow: visible; }
 
 /* Game Over */
 .game-over {

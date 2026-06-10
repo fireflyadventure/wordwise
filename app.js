@@ -154,6 +154,26 @@ let gameScore = 0;
 let gameWords = [];
 let gameState = {};
 
+// ===================== WORD HELPERS =====================
+function canMakeFrom(word, letters) {
+  const available = [...letters];
+  for (const ch of word) {
+    const idx = available.indexOf(ch);
+    if (idx === -1) return false;
+    available.splice(idx, 1);
+  }
+  return true;
+}
+
+function wordsFromLetters(source) {
+  const letters = source.toLowerCase().split('');
+  const result = [];
+  for (const w of COMMON_WORDS) {
+    if (w.length >= 3 && w.length <= source.length && canMakeFrom(w, letters)) result.push(w);
+  }
+  return result.sort((a, b) => a.length - b.length || a.localeCompare(b));
+}
+
 // ===================== NAVIGATION =====================
 function navigate(view, skipPush) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -612,11 +632,14 @@ function startGame(type) {
     const source = MAKER_WORDS[Math.floor(Math.random() * MAKER_WORDS.length)];
     gameState.sourceWord = source;
     gameState.sourceLetters = source.toLowerCase().split('');
+    gameState.possibleWords = wordsFromLetters(source);
+    gameState.foundWords = [];
     area.innerHTML = `
       <div class="game-prompt">
         <div class="prompt-label">Make words using these letters:</div>
         <div class="prompt-word" style="font-size:1.4rem;letter-spacing:4px">${source.toUpperCase()}</div>
         <div class="prompt-hint">Words must be 3+ letters</div>
+        <div class="prompt-progress" id="maker-progress">0 / ${gameState.possibleWords.length} common words found</div>
       </div>
       <div class="game-input-row">
         <input type="text" id="game-input" placeholder="Type a word..." autocomplete="off" autocapitalize="none">
@@ -686,15 +709,13 @@ function submitGameWord() {
     }
   } else if (currentGame === 'maker') {
     if (word.length < 3) { flashInput('3+ letters needed'); return; }
-    const available = [...gameState.sourceLetters];
-    let canMake = true;
-    for (const ch of word) {
-      const idx = available.indexOf(ch);
-      if (idx === -1) { canMake = false; break; }
-      available.splice(idx, 1);
-    }
-    if (!canMake) { flashInput('Letters not available!'); return; }
+    if (!canMakeFrom(word, gameState.sourceLetters)) { flashInput('Letters not available!'); return; }
     valid = true;
+    if (gameState.possibleWords.includes(word) && !gameState.foundWords.includes(word)) {
+      gameState.foundWords.push(word);
+      const progress = document.getElementById('maker-progress');
+      if (progress) progress.textContent = `${gameState.foundWords.length} / ${gameState.possibleWords.length} common words found`;
+    }
   } else if (currentGame === 'az') {
     const letter = String.fromCharCode(65 + gameState.currentLetter).toLowerCase();
     if (word[0] !== letter) { flashInput(`Must start with "${letter.toUpperCase()}"`); return; }
@@ -791,6 +812,19 @@ async function endGame(cancelled) {
   const tm = Math.floor(timeTaken / 60);
   const ts = timeTaken % 60;
 
+  let makerReveal = '';
+  if (game === 'maker' && gameState.possibleWords?.length) {
+    const found = new Set(gameState.foundWords || []);
+    makerReveal = `
+      <div class="card" style="text-align:left">
+        <div class="card-title"><span class="material-icons-round">lightbulb</span>
+          All ${gameState.possibleWords.length} possible words (you found ${found.size})</div>
+        <div class="word-tags reveal">
+          ${gameState.possibleWords.map(w => `<span class="word-tag ${found.has(w) ? '' : 'missed'}">${w}</span>`).join('')}
+        </div>
+      </div>`;
+  }
+
   document.getElementById('game-area').innerHTML = `
     <div class="game-over">
       <span class="material-icons-round">emoji_events</span>
@@ -809,6 +843,7 @@ async function endGame(cancelled) {
       </div>
       <button class="btn btn-primary" id="game-retry"><span class="material-icons-round">replay</span> Play Again</button>
       <button class="btn btn-outline" id="game-exit"><span class="material-icons-round">home</span> Back to Games</button>
+      ${makerReveal}
     </div>`;
 
   document.getElementById('game-retry')?.addEventListener('click', () => startGame(game));
