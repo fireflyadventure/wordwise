@@ -297,6 +297,11 @@ body {
 .game-prompt .prompt-word { font-size: 1.8rem; font-weight: 700; color: var(--md-primary); }
 .game-prompt .prompt-hint { font-size: .8rem; color: var(--md-on-surface-var); margin-top: 6px; }
 .game-prompt .prompt-image { font-size: 4rem; margin: 8px 0; }
+.game-prompt .prompt-photo {
+  width: 100%; max-height: 220px; object-fit: cover;
+  border-radius: var(--md-radius-md); margin: 8px 0;
+  background: var(--md-surface-cv);
+}
 
 .game-input-row {
   display: flex; gap: 8px; margin-bottom: 16px;
@@ -327,6 +332,15 @@ body {
 .game-over .final-score { font-size: 3rem; font-weight: 700; color: var(--md-primary); }
 .game-over .final-label { font-size: .85rem; color: var(--md-on-surface-var); margin-bottom: 20px; }
 .game-over .btn { margin: 6px; }
+.go-stats {
+  display: flex; gap: 12px; justify-content: center; margin-bottom: 24px;
+}
+.go-stat {
+  background: #FFF; border-radius: var(--md-radius-md); padding: 14px 24px;
+  box-shadow: 0 1px 4px var(--md-shadow); min-width: 120px;
+}
+.go-stat .go-num { font-size: 1.5rem; font-weight: 700; color: var(--md-tertiary); }
+.go-stat .go-label { font-size: .7rem; color: var(--md-on-surface-var); margin-top: 2px; }
 
 /* A-Z Progress */
 .az-progress { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
@@ -396,6 +410,7 @@ body.kb-compact #view-game-play .game-prompt { padding: 8px 12px; margin-bottom:
 body.kb-compact #view-game-play .game-prompt .prompt-label { font-size: .7rem; margin-bottom: 2px; }
 body.kb-compact #view-game-play .game-prompt .prompt-word { font-size: 1.25rem; }
 body.kb-compact #view-game-play .game-prompt .prompt-image { font-size: 2rem; margin: 2px 0; }
+body.kb-compact #view-game-play .game-prompt .prompt-photo { max-height: 110px; margin: 4px 0; }
 body.kb-compact #view-game-play .game-prompt .prompt-hint { font-size: .7rem; margin-top: 2px; }
 body.kb-compact #view-game-play .game-input-row { margin-bottom: 8px; }
 body.kb-compact #view-game-play .game-input-row input { padding: 10px 14px; }

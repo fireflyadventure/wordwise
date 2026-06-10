@@ -588,17 +588,26 @@ function startGame(type) {
   } else if (type === 'image') {
     const prompt = IMAGE_PROMPTS[Math.floor(Math.random() * IMAGE_PROMPTS.length)];
     gameState.imagePrompt = prompt;
+    const seed = Date.now() % 100000;
     area.innerHTML = `
       <div class="game-prompt">
-        <div class="prompt-label">${prompt.theme}</div>
-        <div class="prompt-image">${prompt.emoji}</div>
-        <div class="prompt-hint">Type words related to this scene</div>
+        <div class="prompt-label" id="image-theme">What do you see?</div>
+        <img class="prompt-photo" id="prompt-photo" alt="Mystery picture" src="https://picsum.photos/seed/${seed}/600/380">
+        <div class="prompt-image hidden" id="emoji-fallback">${prompt.emoji}</div>
+        <div class="prompt-hint">Type words about this picture - objects, colors, feelings</div>
       </div>
       <div class="game-input-row">
         <input type="text" id="game-input" placeholder="Type a word..." autocomplete="off" autocapitalize="none">
         <button class="btn btn-primary" id="game-submit"><span class="material-icons-round">send</span></button>
       </div>
       <div class="word-tags" id="game-tags"></div>`;
+    // Offline fallback: swap to an emoji scene if the photo can't load
+    const photo = document.getElementById('prompt-photo');
+    photo.onerror = () => {
+      photo.classList.add('hidden');
+      document.getElementById('emoji-fallback').classList.remove('hidden');
+      document.getElementById('image-theme').textContent = prompt.theme;
+    };
   } else if (type === 'maker') {
     const source = MAKER_WORDS[Math.floor(Math.random() * MAKER_WORDS.length)];
     gameState.sourceWord = source;
@@ -778,12 +787,26 @@ async function endGame(cancelled) {
   const isHighScore = !existing || gameScore > existing.score;
   if (isHighScore) await dbPut('scores', { game, score: gameScore, date: new Date().toISOString() });
 
+  const timeTaken = 300 - Math.max(gameTimeLeft, 0);
+  const tm = Math.floor(timeTaken / 60);
+  const ts = timeTaken % 60;
+
   document.getElementById('game-area').innerHTML = `
     <div class="game-over">
       <span class="material-icons-round">emoji_events</span>
-      <h2>Time's Up!</h2>
+      <h2>${gameTimeLeft <= 0 ? "Time's Up!" : 'Finished!'}</h2>
       <div class="final-score">${gameScore}</div>
-      <div class="final-label">words in 5 minutes ${isHighScore ? '- New High Score!' : ''}</div>
+      <div class="final-label">points ${isHighScore ? '- New High Score!' : ''}</div>
+      <div class="go-stats">
+        <div class="go-stat">
+          <div class="go-num">${gameWords.length}</div>
+          <div class="go-label">Total Words</div>
+        </div>
+        <div class="go-stat">
+          <div class="go-num">${tm}:${String(ts).padStart(2, '0')}</div>
+          <div class="go-label">Time Taken</div>
+        </div>
+      </div>
       <button class="btn btn-primary" id="game-retry"><span class="material-icons-round">replay</span> Play Again</button>
       <button class="btn btn-outline" id="game-exit"><span class="material-icons-round">home</span> Back to Games</button>
     </div>`;
