@@ -792,6 +792,29 @@ async function endGame(cancelled) {
   document.getElementById('game-exit')?.addEventListener('click', () => navigate('games'));
 }
 
+// ===================== PWA INSTALL =====================
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('install-banner')?.classList.remove('hidden');
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  document.getElementById('install-banner')?.classList.add('hidden');
+  showSnackbar('WordWise installed! Find it on your home screen');
+});
+
+document.getElementById('install-btn')?.addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  document.getElementById('install-banner')?.classList.add('hidden');
+});
+
 // ===================== MOBILE KEYBOARD HANDLING =====================
 function updateCompactMode() {
   const vv = window.visualViewport;

@@ -405,6 +405,20 @@ body.kb-compact #view-game-play .az-letter { width: 22px; height: 22px; font-siz
 body.kb-compact #view-game-play .word-tags { max-height: 18vh; }
 body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem; }
 
+/* ---- INSTALL BANNER ---- */
+.install-banner {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, var(--md-primary), #1B5E40);
+  color: #FFF; border-radius: var(--md-radius-lg);
+  padding: 14px 16px; margin-bottom: 16px;
+  box-shadow: 0 2px 8px var(--md-shadow);
+}
+.install-banner .material-icons-round { font-size: 32px; opacity: .9; }
+.install-banner .install-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.install-banner .install-text strong { font-size: .95rem; }
+.install-banner .install-text span { font-size: .75rem; opacity: .85; }
+.install-banner .btn { background: #FFF; color: var(--md-primary); padding: 10px 20px; }
+
 /* ---- DEV CREDIT ---- */
 .dev-credit {
   text-align: center;
