@@ -247,14 +247,74 @@ function getProfile() {
   try { return JSON.parse(localStorage.getItem('apexlex-profile')); } catch { return null; }
 }
 
-function saveProfile(name) {
-  localStorage.setItem('apexlex-profile', JSON.stringify({ name, since: new Date().toISOString() }));
+function saveProfile(name, email) {
+  const prev = getProfile() || {};
+  localStorage.setItem('apexlex-profile', JSON.stringify({
+    name,
+    email: email !== undefined ? email : prev.email,
+    since: prev.since || new Date().toISOString()
+  }));
+}
+
+function isValidEmail(v) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
 }
 
 function showWelcomeScreen() {
+  // Prefill for existing users who only need to add their email
+  const p = getProfile();
+  if (p?.name) document.getElementById('welcome-name').value = p.name;
+  if (p?.email) document.getElementById('welcome-email').value = p.email;
   document.getElementById('welcome-screen').classList.remove('hidden');
-  setTimeout(() => document.getElementById('welcome-name')?.focus(), 400);
+  setTimeout(() => {
+    (p?.name ? document.getElementById('welcome-email') : document.getElementById('welcome-name'))?.focus();
+  }, 400);
 }
+
+// ===================== SIGNUP TRACKING =====================
+// Signups are emailed to the developer via Web3Forms (free service).
+// Get your access key at https://web3forms.com (enter your email, the
+// key arrives by mail), paste it below, and redeploy.
+const TRACK_ACCESS_KEY = '';
+
+function queuePing(type) {
+  const p = getProfile();
+  if (!p?.email) return;
+  let queue;
+  try { queue = JSON.parse(localStorage.getItem('apexlex-pings') || '[]'); } catch { queue = []; }
+  queue.push({ type, name: p.name, email: p.email, at: new Date().toISOString() });
+  localStorage.setItem('apexlex-pings', JSON.stringify(queue.slice(-20)));
+  flushPings();
+}
+
+async function flushPings() {
+  if (!TRACK_ACCESS_KEY || !navigator.onLine) return;
+  let queue;
+  try { queue = JSON.parse(localStorage.getItem('apexlex-pings') || '[]'); } catch { return; }
+  while (queue.length) {
+    const ping = queue[0];
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_key: TRACK_ACCESS_KEY,
+          subject: `Apexlex ${ping.type}: ${ping.name}`,
+          from_name: 'Apexlex App',
+          name: ping.name,
+          email: ping.email,
+          event: ping.type,
+          time: ping.at
+        })
+      });
+      if (!res.ok) break;
+      queue.shift();
+      localStorage.setItem('apexlex-pings', JSON.stringify(queue));
+    } catch { break; }
+  }
+}
+
+window.addEventListener('online', flushPings);
 
 function applyProfile() {
   const profile = getProfile();
@@ -268,31 +328,48 @@ function applyProfile() {
 
 document.getElementById('welcome-start')?.addEventListener('click', () => {
   const name = document.getElementById('welcome-name').value.trim();
+  const email = document.getElementById('welcome-email').value.trim().toLowerCase();
   if (!name) {
     document.getElementById('welcome-name').focus();
     return;
   }
-  saveProfile(name);
+  if (!isValidEmail(email)) {
+    showSnackbar('Please enter a valid email address');
+    document.getElementById('welcome-email').focus();
+    return;
+  }
+  const isNewUser = !getProfile()?.email;
+  saveProfile(name, email);
   document.getElementById('welcome-screen').classList.add('hidden');
   applyProfile();
+  if (isNewUser) queuePing('signup');
   showSnackbar(`Welcome to Apexlex, ${name}!`);
 });
-document.getElementById('welcome-name')?.addEventListener('keydown', e => {
+document.getElementById('welcome-email')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('welcome-start').click();
 });
 
 // Avatar -> profile sheet
 document.getElementById('avatar-btn')?.addEventListener('click', () => {
   document.getElementById('profile-name').value = getProfile()?.name || '';
+  document.getElementById('profile-email').value = getProfile()?.email || '';
   document.getElementById('modal-profile').classList.add('active');
 });
 document.getElementById('profile-save')?.addEventListener('click', () => {
   const name = document.getElementById('profile-name').value.trim();
+  const email = document.getElementById('profile-email').value.trim().toLowerCase();
   if (!name) { document.getElementById('profile-name').focus(); return; }
-  saveProfile(name);
+  if (!isValidEmail(email)) {
+    showSnackbar('Please enter a valid email address');
+    document.getElementById('profile-email').focus();
+    return;
+  }
+  const emailChanged = getProfile()?.email !== email;
+  saveProfile(name, email);
   document.getElementById('modal-profile').classList.remove('active');
   applyProfile();
-  showSnackbar('Name updated!');
+  if (emailChanged) queuePing('email-updated');
+  showSnackbar('Profile updated!');
 });
 document.getElementById('profile-logout')?.addEventListener('click', () => {
   localStorage.removeItem('apexlex-profile');
@@ -340,14 +417,16 @@ async function importBackupData(data) {
       if (!cur || s.score > cur.score) await dbPut('scores', s);
     }
   }
-  if (data.profile?.name) saveProfile(data.profile.name);
+  if (data.profile?.name) saveProfile(data.profile.name, data.profile.email);
   allWords = await dbGetAll('words');
   refreshDashboard();
   refreshDictionary();
   refreshStats();
   refreshGameCards();
   applyProfile();
-  document.getElementById('welcome-screen').classList.add('hidden');
+  // Keep the login screen up if the restored profile still has no email
+  if (getProfile()?.email) document.getElementById('welcome-screen').classList.add('hidden');
+  else if (getProfile()?.name) document.getElementById('welcome-name').value = getProfile().name;
   return added;
 }
 
@@ -1082,8 +1161,11 @@ function showSnackbar(msg) {
 
 // ===================== INIT =====================
 async function init() {
-  // Login check runs first and synchronously - a broken DB can never hide it
-  if (!getProfile()?.name) showWelcomeScreen();
+  // Login check runs first and synchronously - a broken DB can never hide it.
+  // Shows once for new users, and once more for old profiles missing an email.
+  const p = getProfile();
+  if (!p?.name || !p?.email) showWelcomeScreen();
+  flushPings();
 
   // Ask the browser to protect our data from being evicted or cleared
   if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
