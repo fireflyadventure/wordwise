@@ -902,35 +902,31 @@ async function refreshGameLog() {
       <span class="bar-label">${labels[i]}</span>
     </div>`).join('');
 
-  // A-Z letter groups
+  // A-Z letter tabs + word cloud
   const byLetter = {};
   for (const w of periodUnique) {
     const l = w[0].toUpperCase();
     (byLetter[l] = byLetter[l] || []).push(w);
   }
-  const letterHTML = Object.keys(byLetter).sort().map(l => `
-    <div class="letter-group">
-      <button class="letter-header">
-        <span class="letter-badge">${l}</span>
-        <span class="letter-count">${byLetter[l].length} word${byLetter[l].length !== 1 ? 's' : ''}</span>
-        <span class="material-icons-round letter-arrow">expand_more</span>
-      </button>
-      <div class="letter-words">
-        ${byLetter[l].map(w => `<span class="log-word">${w}</span>`).join('')}
-      </div>
-    </div>`).join('');
+  const letters = Object.keys(byLetter).sort();
+  const firstLetter = letters[0];
+
+  const renderCloud = l => byLetter[l].map(w => `<span class="log-word">${w}</span>`).join('');
 
   el.innerHTML = `
     <div class="chart-wrap" style="margin-bottom:16px">
       <div class="bar-chart">${chartHTML}</div>
     </div>
-    <div class="letter-groups">${letterHTML}</div>`;
+    <div class="letter-tabs">
+      ${letters.map(l => `<button class="letter-tab${l === firstLetter ? ' active' : ''}" data-letter="${l}">${l}</button>`).join('')}
+    </div>
+    <div class="letter-cloud">${renderCloud(firstLetter)}</div>`;
 
-  el.querySelectorAll('.letter-header').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const words = btn.nextElementSibling;
-      const open = words.classList.toggle('open');
-      btn.querySelector('.letter-arrow').textContent = open ? 'expand_less' : 'expand_more';
+  el.querySelectorAll('.letter-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      el.querySelectorAll('.letter-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      el.querySelector('.letter-cloud').innerHTML = renderCloud(tab.dataset.letter);
     });
   });
 }

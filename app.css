@@ -613,33 +613,21 @@ body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem;
   background: linear-gradient(180deg, #06B6D4, #0D9488);
 }
 
-/* ---- LETTER ACCORDION ---- */
-.letter-groups { margin-top: 4px; }
-.letter-group { border-bottom: 1px solid var(--md-outline-var); }
-.letter-group:last-child { border-bottom: none; }
-
-.letter-header {
-  width: 100%; display: flex; align-items: center; gap: 10px;
-  padding: 11px 4px; background: none; border: none; cursor: pointer;
+/* ---- LETTER TABS + WORD CLOUD ---- */
+.letter-tabs {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
 }
-.letter-badge {
-  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-  background: var(--md-tertiary-container); color: var(--md-tertiary);
-  display: flex; align-items: center; justify-content: center;
-  font-size: .85rem; font-weight: 700;
+.letter-tab {
+  background: var(--md-primary-container); color: var(--md-on-primary-container);
+  border: none; border-radius: 20px; padding: 5px 13px;
+  font-size: .78rem; font-weight: 600; cursor: pointer;
 }
-.letter-count {
-  flex: 1; font-size: .82rem; color: var(--md-on-surface-var);
-  font-weight: 500; text-align: left;
+.letter-tab.active {
+  background: var(--md-primary); color: var(--md-on-primary);
 }
-.letter-arrow {
-  font-size: 20px; color: var(--md-on-surface-var);
-  transition: transform .2s;
+.letter-cloud {
+  display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px;
 }
-.letter-words {
-  display: none; flex-wrap: wrap; gap: 6px; padding: 0 4px 12px;
-}
-.letter-words.open { display: flex; }
 
 /* ---- GAME WORD LOG ---- */
 .log-day { margin-top: 16px; }
