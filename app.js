@@ -298,12 +298,7 @@ async function verifyWordOnline(word) {
     const t = setTimeout(() => ctrl.abort(), 4000);
     const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, { signal: ctrl.signal });
     clearTimeout(t);
-    if (res.status === 404) {
-      // Only hard-reject words with zero vowels — those are definitely gibberish.
-      // Real English words the API happens to lack get benefit of the doubt.
-      if (!/[aeiou]/.test(word)) { spellCache.set(word, false); return false; }
-      return null;
-    }
+    if (res.status === 404) { spellCache.set(word, false); return false; }
     if (!res.ok) return null;
     spellCache.set(word, true);
     return true;
