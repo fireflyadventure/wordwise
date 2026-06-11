@@ -566,7 +566,7 @@ function refreshDictionary() {
     document.getElementById('dict-list').innerHTML = `
       <div class="empty-state">
         <span class="material-icons-round">menu_book</span>
-        <p>${search ? 'No words match your search' : 'Your dictionary is empty'}</p>
+        <p>${search ? 'No words match your search' : 'Your collection is empty'}</p>
         ${!search ? '<button class="btn btn-tonal" onclick="openAddModal()">Add Your First Word</button>' : ''}
       </div>`;
     return;
@@ -679,7 +679,7 @@ async function showWordDetail(word, isDaily) {
 
     ${!allWords.find(w => w.word.toLowerCase() === word.toLowerCase()) ? `
       <button class="btn btn-primary btn-full mt-16" id="add-from-detail" data-word="${data.word}">
-        <span class="material-icons-round">add</span> Add to My Dictionary
+        <span class="material-icons-round">add</span> Add to My Collection
       </button>
     ` : ''}
   `;
@@ -697,7 +697,7 @@ async function showWordDetail(word, isDaily) {
   document.getElementById('add-from-detail')?.addEventListener('click', async function () {
     await addWord(this.dataset.word);
     this.remove();
-    showSnackbar('Word added to dictionary!');
+    showSnackbar('Word added to your collection!');
   });
 
   document.getElementById('detail-delete').onclick = async () => {
@@ -754,7 +754,7 @@ document.getElementById('add-save')?.addEventListener('click', async () => {
 
   if (!word) { statusEl.textContent = 'Please enter a word'; statusEl.style.color = ''; return; }
   if (!/^[a-z]+$/.test(word)) { statusEl.textContent = 'Only English letters allowed'; statusEl.style.color = ''; return; }
-  if (allWords.find(w => w.word === word)) { statusEl.textContent = 'Word already in your dictionary'; statusEl.style.color = ''; return; }
+  if (allWords.find(w => w.word === word)) { statusEl.textContent = 'Word already in your collection'; statusEl.style.color = ''; return; }
 
   // Second tap after warning — user confirmed, save regardless
   if (addWordWarned === word) {
@@ -763,7 +763,7 @@ document.getElementById('add-save')?.addEventListener('click', async () => {
     statusEl.style.color = '';
     await addWord(word);
     closeAddModal();
-    showSnackbar(`"${word}" added to your dictionary!`);
+    showSnackbar(`"${word}" added to your collection!`);
     refreshDictionary();
     return;
   }
@@ -789,7 +789,7 @@ document.getElementById('add-save')?.addEventListener('click', async () => {
 
   await addWord(word);
   closeAddModal();
-  showSnackbar(`"${word}" added to your dictionary!`);
+  showSnackbar(`"${word}" added to your collection!`);
   refreshDictionary();
 });
 
