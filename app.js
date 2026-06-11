@@ -249,11 +249,19 @@ function canMakeFrom(word, letters) {
   return true;
 }
 
+// Word Maker rule: any letter present in the source may be reused freely
+function canUseSourceLetters(word, sourceSet) {
+  for (const ch of word) {
+    if (!sourceSet.has(ch)) return false;
+  }
+  return true;
+}
+
 function wordsFromLetters(source) {
-  const letters = source.toLowerCase().split('');
+  const sourceSet = new Set(source.toLowerCase());
   const result = [];
   for (const w of COMMON_WORDS) {
-    if (w.length >= 3 && w.length <= source.length && canMakeFrom(w, letters)) result.push(w);
+    if (w.length >= 3 && w.length <= source.length && canUseSourceLetters(w, sourceSet)) result.push(w);
   }
   return result.sort((a, b) => a.length - b.length || a.localeCompare(b));
 }
@@ -893,14 +901,14 @@ function startGame(type) {
   } else if (type === 'maker') {
     const source = MAKER_WORDS[Math.floor(Math.random() * MAKER_WORDS.length)];
     gameState.sourceWord = source;
-    gameState.sourceLetters = source.toLowerCase().split('');
+    gameState.sourceSet = new Set(source.toLowerCase());
     gameState.possibleWords = wordsFromLetters(source);
     gameState.foundWords = [];
     area.innerHTML = `
       <div class="game-prompt">
         <div class="prompt-label">Make words using these letters:</div>
         <div class="prompt-word" style="font-size:1.4rem;letter-spacing:4px">${source.toUpperCase()}</div>
-        <div class="prompt-hint">Words must be 3+ letters</div>
+        <div class="prompt-hint">Use any of these letters (repeats allowed!)</div>
         <div class="prompt-progress" id="maker-progress">0 / ${gameState.possibleWords.length} common words found</div>
       </div>
       <div class="game-input-row">
@@ -972,7 +980,7 @@ async function submitGameWord() {
     };
   } else if (currentGame === 'maker') {
     if (word.length < 3) { flashInput('3+ letters needed'); return; }
-    if (!canMakeFrom(word, gameState.sourceLetters)) { flashInput('Letters not available!'); return; }
+    if (!canUseSourceLetters(word, gameState.sourceSet)) { flashInput('Letters not available!'); return; }
     commit = () => {
       if (gameState.possibleWords.includes(word) && !gameState.foundWords.includes(word)) {
         gameState.foundWords.push(word);
