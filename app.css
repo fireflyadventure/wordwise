@@ -613,21 +613,35 @@ body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem;
   background: linear-gradient(180deg, #06B6D4, #0D9488);
 }
 
-/* ---- LETTER TABS + WORD CLOUD ---- */
+/* ---- LETTER TABS + WORD PANEL ---- */
 .letter-tabs {
-  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+  display: flex; overflow-x: auto; scrollbar-width: none;
+  border-bottom: 2px solid var(--md-outline-var); margin-bottom: 16px;
 }
+.letter-tabs::-webkit-scrollbar { display: none; }
 .letter-tab {
-  background: var(--md-primary-container); color: var(--md-on-primary-container);
-  border: none; border-radius: 20px; padding: 5px 13px;
-  font-size: .78rem; font-weight: 600; cursor: pointer;
+  flex-shrink: 0; background: none; border: none;
+  padding: 7px 11px; font-size: .82rem; font-weight: 600;
+  color: var(--md-on-surface-var); cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: color .15s;
 }
-.letter-tab.active {
-  background: var(--md-primary); color: var(--md-on-primary);
+.letter-tab.active { color: var(--md-primary); border-bottom-color: var(--md-primary); }
+
+.letter-panel {
+  background: #fff; border-radius: var(--md-radius-lg);
+  padding: 16px; box-shadow: 0 1px 4px var(--md-shadow);
 }
-.letter-cloud {
-  display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px;
+.letter-panel-hd {
+  display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px;
 }
+.letter-panel-big {
+  font-size: 2.8rem; font-weight: 800; line-height: 1;
+  background: var(--md-gradient);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.letter-panel-count { font-size: .78rem; color: var(--md-on-surface-var); }
+.letter-cloud { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* ---- GAME WORD LOG ---- */
 .log-day { margin-top: 16px; }

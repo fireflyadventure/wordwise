@@ -902,7 +902,7 @@ async function refreshGameLog() {
       <span class="bar-label">${labels[i]}</span>
     </div>`).join('');
 
-  // A-Z letter tabs + word cloud
+  // A-Z letter tabs + word panel
   const byLetter = {};
   for (const w of periodUnique) {
     const l = w[0].toUpperCase();
@@ -911,7 +911,16 @@ async function refreshGameLog() {
   const letters = Object.keys(byLetter).sort();
   const firstLetter = letters[0];
 
-  const renderCloud = l => byLetter[l].map(w => `<span class="log-word">${w}</span>`).join('');
+  const renderPanel = l => `
+    <div class="letter-panel">
+      <div class="letter-panel-hd">
+        <span class="letter-panel-big">${l}</span>
+        <span class="letter-panel-count">${byLetter[l].length} word${byLetter[l].length !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="letter-cloud">
+        ${byLetter[l].map(w => `<span class="log-word">${w}</span>`).join('')}
+      </div>
+    </div>`;
 
   el.innerHTML = `
     <div class="chart-wrap" style="margin-bottom:16px">
@@ -920,13 +929,13 @@ async function refreshGameLog() {
     <div class="letter-tabs">
       ${letters.map(l => `<button class="letter-tab${l === firstLetter ? ' active' : ''}" data-letter="${l}">${l}</button>`).join('')}
     </div>
-    <div class="letter-cloud">${renderCloud(firstLetter)}</div>`;
+    <div class="letter-panel-wrap">${renderPanel(firstLetter)}</div>`;
 
   el.querySelectorAll('.letter-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       el.querySelectorAll('.letter-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      el.querySelector('.letter-cloud').innerHTML = renderCloud(tab.dataset.letter);
+      el.querySelector('.letter-panel-wrap').innerHTML = renderPanel(tab.dataset.letter);
     });
   });
 }
