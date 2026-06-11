@@ -440,6 +440,21 @@ body {
 body.in-game #bottom-nav { display: none; }
 body.in-game .view { padding-bottom: 16px; }
 
+/* During games the keyboard covers the bottom - show messages at the top */
+body.in-game .snackbar {
+  bottom: auto; top: 12px;
+  transform: translateX(-50%) translateY(-90px);
+  background: var(--md-error); color: #FFF;
+}
+body.in-game .snackbar.show { transform: translateX(-50%) translateY(0); }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+.game-input-row input.shake { animation: shake .35s ease; }
+
 /* Compact game layout when the on-screen keyboard shrinks the visible area.
    body.kb-compact is toggled from JS using visualViewport height, which works
    on all mobile browsers regardless of keyboard resize behavior. */

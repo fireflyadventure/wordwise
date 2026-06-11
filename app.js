@@ -162,6 +162,8 @@ let gameTimeLeft = 300;
 let gameScore = 0;
 let gameWords = [];
 let gameState = {};
+let addWordWarned = '';
+let addWordChecking = false;
 
 // ===================== GAME PHOTO =====================
 function loadGamePhoto() {
@@ -194,6 +196,46 @@ function loadGamePhoto() {
     }
   };
   photo.src = `https://loremflickr.com/600/380/${combo.join(',')}/all?lock=${lock}`;
+}
+
+// ===================== SPELL CHECK =====================
+// Local 10k-word list (words.js) answers instantly and offline;
+// unknown words are verified against the dictionary API when online.
+const WORD_SET = new Set(typeof WORD_LIST !== 'undefined' ? WORD_LIST : []);
+const spellCache = new Map();
+
+function isKnownLocal(w) {
+  if (WORD_SET.has(w) || COMMON_WORDS.has(w)) return true;
+  // Accept common inflections of known base words: cats, boxes, walked, running, cities
+  const tries = [
+    [/s$/, ''], [/es$/, ''], [/ed$/, ''], [/ed$/, 'e'],
+    [/ing$/, ''], [/ing$/, 'e'], [/ies$/, 'y'], [/er$/, ''], [/est$/, '']
+  ];
+  for (const [suf, rep] of tries) {
+    if (suf.test(w)) {
+      const base = w.replace(suf, rep);
+      if (base.length >= 2 && (WORD_SET.has(base) || COMMON_WORDS.has(base))) return true;
+    }
+  }
+  return false;
+}
+
+// true = real word, false = not found (misspelled), null = can't check (offline)
+async function verifyWordOnline(word) {
+  if (spellCache.has(word)) return spellCache.get(word);
+  if (!navigator.onLine) return null;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (res.status === 404) { spellCache.set(word, false); return false; }
+    if (!res.ok) return null;
+    spellCache.set(word, true);
+    return true;
+  } catch {
+    return null;
+  }
 }
 
 // ===================== WORD HELPERS =====================
@@ -605,7 +647,11 @@ function speak(text) {
 function openAddModal() {
   document.getElementById('modal-add').classList.add('active');
   document.getElementById('add-word-input').value = '';
-  document.getElementById('add-word-status').textContent = '';
+  const statusEl = document.getElementById('add-word-status');
+  statusEl.textContent = '';
+  statusEl.style.color = '';
+  addWordWarned = '';
+  addWordChecking = false;
   setTimeout(() => document.getElementById('add-word-input').focus(), 300);
 }
 
@@ -620,11 +666,46 @@ document.getElementById('modal-add')?.addEventListener('click', e => {
 });
 
 document.getElementById('add-save')?.addEventListener('click', async () => {
+  if (addWordChecking) return;
   const input = document.getElementById('add-word-input');
+  const statusEl = document.getElementById('add-word-status');
+  const saveBtn = document.getElementById('add-save');
   const word = input.value.trim().toLowerCase();
-  if (!word) { document.getElementById('add-word-status').textContent = 'Please enter a word'; return; }
-  if (!/^[a-z]+$/.test(word)) { document.getElementById('add-word-status').textContent = 'Only English letters allowed'; return; }
-  if (allWords.find(w => w.word === word)) { document.getElementById('add-word-status').textContent = 'Word already in your dictionary'; return; }
+
+  if (!word) { statusEl.textContent = 'Please enter a word'; statusEl.style.color = ''; return; }
+  if (!/^[a-z]+$/.test(word)) { statusEl.textContent = 'Only English letters allowed'; statusEl.style.color = ''; return; }
+  if (allWords.find(w => w.word === word)) { statusEl.textContent = 'Word already in your dictionary'; statusEl.style.color = ''; return; }
+
+  // Second tap after warning — user confirmed, save regardless
+  if (addWordWarned === word) {
+    addWordWarned = '';
+    statusEl.textContent = '';
+    statusEl.style.color = '';
+    await addWord(word);
+    closeAddModal();
+    showSnackbar(`"${word}" added to your dictionary!`);
+    refreshDictionary();
+    return;
+  }
+
+  // Spell check: local list is instant; unknown words hit the API
+  if (!isKnownLocal(word)) {
+    addWordChecking = true;
+    saveBtn.disabled = true;
+    statusEl.style.color = 'var(--md-on-surface-var)';
+    statusEl.textContent = 'Checking spelling…';
+    const ok = await verifyWordOnline(word);
+    addWordChecking = false;
+    saveBtn.disabled = false;
+    if (ok === false) {
+      addWordWarned = word;
+      statusEl.style.color = 'var(--md-amber)';
+      statusEl.textContent = '⚠️ Might be misspelled. Tap Add again to save anyway.';
+      return;
+    }
+    statusEl.textContent = '';
+    statusEl.style.color = '';
+  }
 
   await addWord(word);
   closeAddModal();
@@ -634,6 +715,11 @@ document.getElementById('add-save')?.addEventListener('click', async () => {
 
 document.getElementById('add-word-input')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('add-save').click();
+});
+document.getElementById('add-word-input')?.addEventListener('input', () => {
+  addWordWarned = '';
+  const statusEl = document.getElementById('add-word-status');
+  if (statusEl.style.color) { statusEl.style.color = ''; statusEl.textContent = ''; }
 });
 
 async function addWord(word) {
@@ -853,7 +939,7 @@ function startGame(type) {
   startGameTimer();
 }
 
-function submitGameWord() {
+async function submitGameWord() {
   const input = document.getElementById('game-input');
   const word = input.value.trim().toLowerCase();
   input.value = '';
@@ -863,59 +949,74 @@ function submitGameWord() {
     flashInput('Already used!');
     return;
   }
+  if (!/^[a-z]+$/.test(word)) {
+    flashInput('Letters only!');
+    return;
+  }
 
-  let valid = false;
+  // Game rules first; state changes wait in `commit` until spelling passes
+  const gameAtSubmit = currentGame;
+  let commit = null;
 
   if (currentGame === 'chain') {
     const needed = gameState.lastWord[gameState.lastWord.length - 1];
     if (word[0] !== needed) { flashInput(`Must start with "${needed.toUpperCase()}"`); return; }
-    if (word.length < 2) { flashInput('Too short!'); return; }
-    if (COMMON_WORDS.has(word) || word.length >= 3) {
-      valid = true;
+    commit = () => {
       gameState.lastWord = word;
       document.getElementById('chain-letter').textContent = word[word.length - 1].toUpperCase();
       document.getElementById('chain-last').textContent = word;
-    }
+    };
   } else if (currentGame === 'image') {
-    if (word.length >= 2) {
-      valid = true;
-      if (gameState.imagePrompt.hints.includes(word)) {
-        gameScore += 1; // bonus for matching hint
-      }
-    }
+    commit = () => {
+      if (gameState.imagePrompt.hints.includes(word)) gameScore += 1; // hint bonus
+    };
   } else if (currentGame === 'maker') {
     if (word.length < 3) { flashInput('3+ letters needed'); return; }
     if (!canMakeFrom(word, gameState.sourceLetters)) { flashInput('Letters not available!'); return; }
-    valid = true;
-    if (gameState.possibleWords.includes(word) && !gameState.foundWords.includes(word)) {
-      gameState.foundWords.push(word);
-      const progress = document.getElementById('maker-progress');
-      if (progress) progress.textContent = `${gameState.foundWords.length} / ${gameState.possibleWords.length} common words found`;
-    }
+    commit = () => {
+      if (gameState.possibleWords.includes(word) && !gameState.foundWords.includes(word)) {
+        gameState.foundWords.push(word);
+        const progress = document.getElementById('maker-progress');
+        if (progress) progress.textContent = `${gameState.foundWords.length} / ${gameState.possibleWords.length} common words found`;
+      }
+    };
   } else if (currentGame === 'az') {
     const letter = String.fromCharCode(65 + gameState.currentLetter).toLowerCase();
     if (word[0] !== letter) { flashInput(`Must start with "${letter.toUpperCase()}"`); return; }
-    if (word.length < 2) { flashInput('Too short!'); return; }
-    valid = true;
-    gameState.letterWords[gameState.currentLetter].push(word);
-    const count = gameState.letterWords[gameState.currentLetter].length;
-    document.getElementById('az-count').textContent = `${count} / 5 words`;
-    if (count >= 5 && gameState.currentLetter < 25) {
-      gameState.currentLetter++;
-      document.getElementById('az-letter').textContent = String.fromCharCode(65 + gameState.currentLetter);
-      document.getElementById('az-count').textContent = `${gameState.letterWords[gameState.currentLetter].length} / 5 words`;
-      renderAZProgress();
+    commit = () => {
+      gameState.letterWords[gameState.currentLetter].push(word);
+      const count = gameState.letterWords[gameState.currentLetter].length;
+      document.getElementById('az-count').textContent = `${count} / 5 words`;
+      if (count >= 5 && gameState.currentLetter < 25) {
+        gameState.currentLetter++;
+        document.getElementById('az-letter').textContent = String.fromCharCode(65 + gameState.currentLetter);
+        document.getElementById('az-count').textContent = `${gameState.letterWords[gameState.currentLetter].length} / 5 words`;
+        renderAZProgress();
+      }
+    };
+  } else {
+    return;
+  }
+
+  // Spelling gate: local list answers instantly; otherwise ask the
+  // dictionary API when online. Offline unknowns get the benefit of the doubt.
+  if (!isKnownLocal(word)) {
+    const ok = await verifyWordOnline(word);
+    // Bail out if the game ended or changed while we were checking
+    if (currentGame !== gameAtSubmit || !gameTimer) return;
+    if (ok === false) {
+      flashInput('Check spelling!');
+      showSnackbar(`"${word}" not found in the dictionary`);
+      addWordTag(word, false);
+      return;
     }
   }
 
-  if (valid) {
-    gameWords.push(word);
-    gameScore++;
-    document.getElementById('game-score').textContent = gameScore;
-    addWordTag(word, true);
-  } else {
-    addWordTag(word, false);
-  }
+  commit();
+  gameWords.push(word);
+  gameScore++;
+  document.getElementById('game-score').textContent = gameScore;
+  addWordTag(word, true);
 }
 
 function addWordTag(word, valid) {
@@ -930,9 +1031,14 @@ function flashInput(msg) {
   const input = document.getElementById('game-input');
   input.style.borderColor = 'var(--md-error)';
   input.placeholder = msg;
+  input.classList.remove('shake');
+  void input.offsetWidth; // restart the animation
+  input.classList.add('shake');
+  showSnackbar(msg); // placeholder text hides behind the phone keyboard
   setTimeout(() => {
     input.style.borderColor = '';
     input.placeholder = 'Type a word...';
+    input.classList.remove('shake');
   }, 1200);
 }
 

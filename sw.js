@@ -1,9 +1,10 @@
-const CACHE_NAME = 'wordwise-v17';
+const CACHE_NAME = 'wordwise-v19';
 const ASSETS = [
   './',
   './index.html',
   './app.css',
   './app.js',
+  './words.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
