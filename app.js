@@ -1447,20 +1447,23 @@ async function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
       .then(reg => {
+        const showUpdateBanner = () => {
+          if (document.getElementById('update-banner')) return;
+          const b = document.createElement('div');
+          b.id = 'update-banner';
+          b.textContent = '✨ New update ready — tap to refresh';
+          b.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:#3730C4;color:#fff;padding:10px 20px;border-radius:24px;font-size:.85rem;font-weight:600;z-index:9999;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.25);white-space:nowrap';
+          b.onclick = () => window.location.reload();
+          document.body.appendChild(b);
+        };
         reg.addEventListener('updatefound', () => {
           const nw = reg.installing;
           nw.addEventListener('statechange', () => {
-            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-              // New version ready — show tap-to-update banner
-              const banner = document.createElement('div');
-              banner.id = 'update-banner';
-              banner.textContent = '✨ New update ready — tap to refresh';
-              banner.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:#3730C4;color:#fff;padding:10px 20px;border-radius:24px;font-size:.85rem;font-weight:600;z-index:9999;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.25);white-space:nowrap';
-              banner.onclick = () => window.location.reload();
-              document.body.appendChild(banner);
-            }
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdateBanner();
           });
         });
+        // Check for update immediately on launch, then on every foreground
+        reg.update().catch(() => {});
         document.addEventListener('visibilitychange', () => {
           if (document.visibilityState === 'visible') reg.update().catch(() => {});
         });
