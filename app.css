@@ -513,6 +513,19 @@ body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem;
 }
 .avatar-btn:active { transform: scale(.9); }
 
+/* ---- BACKUP ---- */
+.backup-row { display: flex; gap: 8px; margin-top: 20px; }
+.backup-row .btn { flex: 1; padding: 12px 8px; font-size: .8rem; }
+.backup-note {
+  font-size: .75rem; color: var(--md-on-surface-var);
+  line-height: 1.5; margin-top: 10px;
+}
+.welcome-restore {
+  background: none; border: none; margin-top: 16px;
+  font: 600 .8rem/1 'Inter', sans-serif; color: var(--md-primary);
+  cursor: pointer; text-decoration: underline;
+}
+
 /* ---- DEV CREDIT ---- */
 .dev-credit {
   text-align: center;

@@ -306,6 +306,68 @@ document.getElementById('modal-profile')?.addEventListener('click', e => {
   if (e.target.id === 'modal-profile') document.getElementById('modal-profile').classList.remove('active');
 });
 
+// ===================== BACKUP & RESTORE =====================
+async function exportBackup() {
+  const words = await dbGetAll('words');
+  const scores = await dbGetAll('scores');
+  const data = {
+    app: 'apexlex', version: 1, exportedAt: new Date().toISOString(),
+    profile: getProfile(), words, scores
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `apexlex-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+  showSnackbar(`Backup saved: ${words.length} words`);
+}
+
+async function importBackupData(data) {
+  if (!data || data.app !== 'apexlex' || !Array.isArray(data.words)) throw new Error('invalid backup');
+  let added = 0;
+  for (const w of data.words) {
+    if (w?.word && !allWords.some(x => x.word === w.word)) {
+      await dbPut('words', w);
+      added++;
+    }
+  }
+  for (const s of (data.scores || [])) {
+    if (s?.game) {
+      const cur = await dbGet('scores', s.game);
+      if (!cur || s.score > cur.score) await dbPut('scores', s);
+    }
+  }
+  if (data.profile?.name) saveProfile(data.profile.name);
+  allWords = await dbGetAll('words');
+  refreshDashboard();
+  refreshDictionary();
+  refreshStats();
+  refreshGameCards();
+  applyProfile();
+  document.getElementById('welcome-screen').classList.add('hidden');
+  return added;
+}
+
+document.getElementById('backup-export')?.addEventListener('click', exportBackup);
+document.getElementById('backup-import')?.addEventListener('click', () => document.getElementById('backup-file').click());
+document.getElementById('welcome-restore')?.addEventListener('click', () => document.getElementById('backup-file').click());
+document.getElementById('backup-file')?.addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const added = await importBackupData(data);
+    document.getElementById('modal-profile').classList.remove('active');
+    showSnackbar(`Backup restored! ${added} new words added`);
+  } catch {
+    showSnackbar('That file is not a valid Apexlex backup');
+  }
+  e.target.value = '';
+});
+
 // ===================== DASHBOARD =====================
 function getGreeting() {
   const h = new Date().getHours();
@@ -1020,13 +1082,22 @@ function showSnackbar(msg) {
 
 // ===================== INIT =====================
 async function init() {
-  await openDB();
-  allWords = await dbGetAll('words');
+  // Login check runs first and synchronously - a broken DB can never hide it
+  if (!getProfile()?.name) showWelcomeScreen();
+
+  // Ask the browser to protect our data from being evicted or cleared
+  if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
+
+  try {
+    await openDB();
+    allWords = await dbGetAll('words');
+  } catch (e) {
+    allWords = [];
+  }
 
   navigate('dashboard');
   updateCompactMode();
   applyProfile();
-  if (!getProfile()?.name) showWelcomeScreen();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })

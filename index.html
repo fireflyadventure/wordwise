@@ -204,6 +204,11 @@
       <button class="btn btn-outline" id="profile-logout"><span class="material-icons-round">logout</span> Log Out</button>
       <button class="btn btn-primary" id="profile-save"><span class="material-icons-round">check</span> Save</button>
     </div>
+    <div class="backup-row">
+      <button class="btn btn-tonal" id="backup-export"><span class="material-icons-round">download</span> Export Backup</button>
+      <button class="btn btn-tonal" id="backup-import"><span class="material-icons-round">upload</span> Import Backup</button>
+    </div>
+    <p class="backup-note">Your words live only on this phone. Export a backup before uninstalling the app or switching phones - then Import it to get everything back.</p>
   </div>
 </div>
 
@@ -219,8 +224,11 @@
     <button class="btn btn-primary btn-full" id="welcome-start">
       <span class="material-icons-round">arrow_forward</span> Get Started
     </button>
+    <button class="welcome-restore" id="welcome-restore">Have a backup file? Restore it</button>
   </div>
 </div>
+
+<input type="file" id="backup-file" accept=".json,application/json" class="hidden">
 
 <!-- SNACKBAR -->
 <div class="snackbar" id="snackbar"></div>
