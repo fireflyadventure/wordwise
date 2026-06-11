@@ -183,31 +183,43 @@ let addWordChecking = false;
 function loadGamePhoto() {
   const photo = document.getElementById('prompt-photo');
   const themeLabel = document.getElementById('image-theme');
+  const fallback = document.getElementById('emoji-fallback');
   if (!photo) return;
 
   const combo = PHOTO_THEMES[Math.floor(Math.random() * PHOTO_THEMES.length)];
   const lock = Math.floor(Math.random() * 100000);
   gameState.photoCombo = combo;
+  const themeName = combo.map(w => w[0].toUpperCase() + w.slice(1)).join(' & ');
+
+  // Show emoji scene immediately so the game is always playable
+  photo.classList.add('hidden');
+  fallback?.classList.remove('hidden');
+  themeLabel.textContent = themeName;
+
+  // Try to load a real photo in the background; swap in if it arrives in time
+  let swapped = false;
+  const giveUp = setTimeout(() => {
+    if (!swapped) {
+      photo.src = '';
+      photo.onload = null;
+      photo.onerror = null;
+    }
+  }, 8000);
 
   photo.dataset.retry = '0';
-  photo.classList.remove('hidden');
-  document.getElementById('emoji-fallback')?.classList.add('hidden');
-  themeLabel.textContent = 'Loading picture...';
-
   photo.onload = () => {
-    themeLabel.textContent = combo.map(w => w[0].toUpperCase() + w.slice(1)).join(' & ');
+    swapped = true;
+    clearTimeout(giveUp);
+    photo.classList.remove('hidden');
+    fallback?.classList.add('hidden');
   };
   photo.onerror = () => {
+    clearTimeout(giveUp);
     if (photo.dataset.retry === '0') {
-      // Strict all-keywords match failed; retry with a looser match
       photo.dataset.retry = '1';
       photo.src = `https://loremflickr.com/600/380/${combo.join(',')}?lock=${lock + 1}`;
-    } else {
-      // Offline or no results: fall back to the emoji scene
-      photo.classList.add('hidden');
-      document.getElementById('emoji-fallback')?.classList.remove('hidden');
-      themeLabel.textContent = gameState.imagePrompt.theme;
     }
+    // Both URLs failed — emoji is already visible, nothing more to do
   };
   photo.src = `https://loremflickr.com/600/380/${combo.join(',')}/all?lock=${lock}`;
 }
