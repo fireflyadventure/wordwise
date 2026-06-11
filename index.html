@@ -16,11 +16,12 @@
 <!-- ============ DASHBOARD ============ -->
 <section id="view-dashboard" class="view active">
   <div class="top-bar">
-    <div>
+    <div style="flex:1">
       <div class="brand-mark">Apexlex</div>
       <h1 id="greeting">Good Morning!</h1>
       <span class="subtitle" id="greeting-sub">Let's learn something new today</span>
     </div>
+    <button class="avatar-btn hidden" id="avatar-btn" aria-label="Your profile">A</button>
   </div>
 
   <div class="install-banner hidden" id="install-banner">
@@ -189,6 +190,37 @@
     <span>Progress</span>
   </button>
 </nav>
+
+<!-- ============ PROFILE MODAL ============ -->
+<div class="modal-overlay" id="modal-profile">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2>Your Profile</h2>
+    <div class="input-wrap">
+      <input type="text" id="profile-name" placeholder=" " autocomplete="off" maxlength="20">
+      <label>Your name</label>
+    </div>
+    <div class="flex-between">
+      <button class="btn btn-outline" id="profile-logout"><span class="material-icons-round">logout</span> Log Out</button>
+      <button class="btn btn-primary" id="profile-save"><span class="material-icons-round">check</span> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ WELCOME / LOGIN ============ -->
+<div class="welcome-screen hidden" id="welcome-screen">
+  <div class="welcome-card">
+    <div class="welcome-logo">Apexlex</div>
+    <p class="welcome-tag">Collect words. Play games.<br>Grow your English every day.</p>
+    <div class="input-wrap">
+      <input type="text" id="welcome-name" placeholder=" " autocomplete="off" maxlength="20" autocapitalize="words">
+      <label>What's your name?</label>
+    </div>
+    <button class="btn btn-primary btn-full" id="welcome-start">
+      <span class="material-icons-round">arrow_forward</span> Get Started
+    </button>
+  </div>
+</div>
 
 <!-- SNACKBAR -->
 <div class="snackbar" id="snackbar"></div>

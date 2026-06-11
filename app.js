@@ -242,12 +242,79 @@ document.getElementById('bottom-nav')?.addEventListener('click', e => {
   navigate(item.dataset.view);
 });
 
+// ===================== USER PROFILE =====================
+function getProfile() {
+  try { return JSON.parse(localStorage.getItem('apexlex-profile')); } catch { return null; }
+}
+
+function saveProfile(name) {
+  localStorage.setItem('apexlex-profile', JSON.stringify({ name, since: new Date().toISOString() }));
+}
+
+function showWelcomeScreen() {
+  document.getElementById('welcome-screen').classList.remove('hidden');
+  setTimeout(() => document.getElementById('welcome-name')?.focus(), 400);
+}
+
+function applyProfile() {
+  const profile = getProfile();
+  const avatar = document.getElementById('avatar-btn');
+  if (profile?.name) {
+    avatar.textContent = profile.name[0].toUpperCase();
+    avatar.classList.remove('hidden');
+  }
+  refreshDashboard();
+}
+
+document.getElementById('welcome-start')?.addEventListener('click', () => {
+  const name = document.getElementById('welcome-name').value.trim();
+  if (!name) {
+    document.getElementById('welcome-name').focus();
+    return;
+  }
+  saveProfile(name);
+  document.getElementById('welcome-screen').classList.add('hidden');
+  applyProfile();
+  showSnackbar(`Welcome to Apexlex, ${name}!`);
+});
+document.getElementById('welcome-name')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('welcome-start').click();
+});
+
+// Avatar -> profile sheet
+document.getElementById('avatar-btn')?.addEventListener('click', () => {
+  document.getElementById('profile-name').value = getProfile()?.name || '';
+  document.getElementById('modal-profile').classList.add('active');
+});
+document.getElementById('profile-save')?.addEventListener('click', () => {
+  const name = document.getElementById('profile-name').value.trim();
+  if (!name) { document.getElementById('profile-name').focus(); return; }
+  saveProfile(name);
+  document.getElementById('modal-profile').classList.remove('active');
+  applyProfile();
+  showSnackbar('Name updated!');
+});
+document.getElementById('profile-logout')?.addEventListener('click', () => {
+  localStorage.removeItem('apexlex-profile');
+  document.getElementById('modal-profile').classList.remove('active');
+  document.getElementById('avatar-btn').classList.add('hidden');
+  refreshDashboard();
+  navigate('dashboard');
+  showWelcomeScreen();
+});
+document.getElementById('modal-profile')?.addEventListener('click', e => {
+  if (e.target.id === 'modal-profile') document.getElementById('modal-profile').classList.remove('active');
+});
+
 // ===================== DASHBOARD =====================
 function getGreeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'Good Morning!';
-  if (h < 17) return 'Good Afternoon!';
-  return 'Good Evening!';
+  const name = getProfile()?.name;
+  let base;
+  if (h < 12) base = 'Good Morning';
+  else if (h < 17) base = 'Good Afternoon';
+  else base = 'Good Evening';
+  return name ? `${base}, ${name}!` : `${base}!`;
 }
 
 function getDailyWords() {
@@ -958,6 +1025,8 @@ async function init() {
 
   navigate('dashboard');
   updateCompactMode();
+  applyProfile();
+  if (!getProfile()?.name) showWelcomeScreen();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })

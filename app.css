@@ -477,6 +477,42 @@ body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem;
 .install-banner .install-text span { font-size: .75rem; opacity: .85; }
 .install-banner .btn { background: #FFF; color: var(--md-primary); padding: 10px 20px; }
 
+/* ---- WELCOME / LOGIN ---- */
+.welcome-screen {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--md-gradient);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.welcome-card {
+  background: #FFF; border-radius: var(--md-radius-xl);
+  padding: 36px 28px; width: 100%; max-width: 380px;
+  text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+  animation: welcomeIn .4s ease;
+}
+@keyframes welcomeIn { from { opacity: 0; transform: translateY(24px) scale(.96); } }
+.welcome-logo {
+  font-size: 2.2rem; font-weight: 800; letter-spacing: -1px;
+  background: var(--md-gradient);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  margin-bottom: 8px;
+}
+.welcome-tag {
+  font-size: .9rem; color: var(--md-on-surface-var);
+  line-height: 1.5; margin-bottom: 28px;
+}
+.welcome-card .input-wrap { text-align: left; margin-bottom: 20px; }
+
+.avatar-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: none;
+  background: var(--md-gradient); color: #FFF;
+  font: 700 1rem/1 'Inter', sans-serif; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px var(--md-shadow); flex-shrink: 0;
+  transition: .15s;
+}
+.avatar-btn:active { transform: scale(.9); }
+
 /* ---- DEV CREDIT ---- */
 .dev-credit {
   text-align: center;
