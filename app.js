@@ -101,7 +101,7 @@ const COMMON_WORDS = new Set(["the","of","and","a","to","in","is","it","that","w
 let db;
 function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open('wordwise', 2);
+    const req = indexedDB.open('wordwise', 3);
     req.onupgradeneeded = e => {
       const d = e.target.result;
       if (!d.objectStoreNames.contains('words')) {
@@ -110,6 +110,10 @@ function openDB() {
       }
       if (!d.objectStoreNames.contains('scores')) {
         d.createObjectStore('scores', { keyPath: 'game' });
+      }
+      if (!d.objectStoreNames.contains('game_words')) {
+        const gs = d.createObjectStore('game_words', { autoIncrement: true });
+        gs.createIndex('dateKey', 'dateKey');
       }
     };
     req.onsuccess = e => { db = e.target.result; resolve(db); };
@@ -144,6 +148,15 @@ function dbGetAll(store) {
   });
 }
 
+function dbAdd(store, data) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    tx.objectStore(store).add(data);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
 function dbDelete(store, key) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(store, 'readwrite');
@@ -162,6 +175,7 @@ let gameTimeLeft = 300;
 let gameScore = 0;
 let gameWords = [];
 let gameState = {};
+let gameTotalTime = 300;
 let addWordWarned = '';
 let addWordChecking = false;
 
@@ -765,6 +779,53 @@ function refreshStats() {
   const period = document.querySelector('#stats-period .chip.active')?.dataset.period || 'week';
   renderChart(period);
   renderMilestones();
+  refreshGameLog();
+}
+
+async function refreshGameLog() {
+  const el = document.getElementById('game-log');
+  if (!el) return;
+
+  const period = document.querySelector('#log-period .chip.active')?.dataset.period || 'today';
+  let all;
+  try { all = await dbGetAll('game_words'); } catch(e) { all = []; }
+
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const weekAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+
+  const filtered = all.filter(w => {
+    if (period === 'today') return w.dateKey === today;
+    if (period === 'week')  return w.dateKey >= weekAgo;
+    return w.dateKey >= monthStart;
+  });
+
+  if (!filtered.length) {
+    el.innerHTML = '<p class="log-empty">No game words yet. Play a Fun Zone game!</p>';
+    return;
+  }
+
+  // Group by date, deduplicate words per day
+  const byDate = {};
+  for (const entry of filtered) {
+    if (!byDate[entry.dateKey]) byDate[entry.dateKey] = new Set();
+    byDate[entry.dateKey].add(entry.word);
+  }
+
+  const dates = Object.keys(byDate).sort().reverse();
+  el.innerHTML = dates.map(dk => {
+    const words = [...byDate[dk]].sort();
+    const label = dk === today ? 'Today' : formatDate(dk + 'T12:00:00');
+    return `
+      <div class="log-day">
+        <div class="log-date-row">
+          <span class="log-date">${label}</span>
+          <span class="log-count">${words.length} word${words.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="log-words">${words.map(w => `<span class="log-word">${w}</span>`).join('')}</div>
+      </div>`;
+  }).join('');
 }
 
 function renderChart(period) {
@@ -828,6 +889,14 @@ document.getElementById('stats-period')?.addEventListener('click', e => {
   document.querySelectorAll('#stats-period .chip').forEach(c => c.classList.remove('active'));
   chip.classList.add('active');
   renderChart(chip.dataset.period);
+});
+
+document.getElementById('log-period')?.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  document.querySelectorAll('#log-period .chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  refreshGameLog();
 });
 
 // ===================== GAMES =====================
@@ -917,33 +986,68 @@ function startGame(type) {
       </div>
       <div class="word-tags" id="game-tags"></div>`;
   } else if (type === 'az') {
-    gameState.currentLetter = 0;
-    gameState.letterWords = {};
-    for (let i = 0; i < 26; i++) gameState.letterWords[i] = [];
     area.innerHTML = `
-      <div class="az-progress" id="az-progress"></div>
-      <div class="game-prompt">
-        <div class="prompt-label">Type 5 words starting with:</div>
-        <div class="prompt-word" id="az-letter">A</div>
-        <div class="prompt-hint" id="az-count">0 / 5 words</div>
-      </div>
-      <div class="game-input-row">
-        <input type="text" id="game-input" placeholder="Type a word..." autocomplete="off" autocapitalize="none">
-        <button class="btn btn-primary" id="game-submit"><span class="material-icons-round">send</span></button>
-      </div>
-      <div class="word-tags" id="game-tags"></div>`;
-    renderAZProgress();
+      <div class="time-choice-screen">
+        <p class="prompt-label" style="text-align:center;margin-bottom:24px">How long do you want to play?</p>
+        <div class="time-choice">
+          <button class="time-btn" data-time="300">
+            <span class="time-num">5</span>
+            <span class="time-unit">minutes</span>
+          </button>
+          <button class="time-btn" data-time="600">
+            <span class="time-num">10</span>
+            <span class="time-unit">minutes</span>
+          </button>
+        </div>
+      </div>`;
+    area.querySelectorAll('.time-btn').forEach(btn => {
+      btn.addEventListener('click', () => setupAZGame(parseInt(btn.dataset.time)));
+    });
+    return; // timer + input wired up inside setupAZGame
   }
 
   const input = document.getElementById('game-input');
   document.getElementById('game-submit')?.addEventListener('click', () => submitGameWord());
   input?.addEventListener('keydown', e => { if (e.key === 'Enter') submitGameWord(); });
-  // When the keyboard opens, scroll back to the top so timer + prompt stay visible
   input?.addEventListener('focus', () => {
     setTimeout(() => { updateCompactMode(); window.scrollTo({ top: 0 }); }, 300);
   });
   setTimeout(() => input?.focus(), 300);
 
+  startGameTimer();
+}
+
+function setupAZGame(seconds) {
+  gameTimeLeft = seconds;
+  gameTotalTime = seconds;
+  updateTimerDisplay();
+
+  gameState.currentLetter = 0;
+  gameState.letterWords = {};
+  for (let i = 0; i < 26; i++) gameState.letterWords[i] = [];
+
+  const area = document.getElementById('game-area');
+  area.innerHTML = `
+    <div class="az-progress" id="az-progress"></div>
+    <div class="game-prompt">
+      <div class="prompt-label">Type 5 words starting with:</div>
+      <div class="prompt-word" id="az-letter">A</div>
+      <div class="prompt-hint" id="az-count">0 / 5 words</div>
+    </div>
+    <div class="game-input-row">
+      <input type="text" id="game-input" placeholder="Type a word..." autocomplete="off" autocapitalize="none">
+      <button class="btn btn-primary" id="game-submit"><span class="material-icons-round">send</span></button>
+    </div>
+    <div class="word-tags" id="game-tags"></div>`;
+  renderAZProgress();
+
+  const input = document.getElementById('game-input');
+  document.getElementById('game-submit').addEventListener('click', () => submitGameWord());
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') submitGameWord(); });
+  input.addEventListener('focus', () => {
+    setTimeout(() => { updateCompactMode(); window.scrollTo({ top: 0 }); }, 300);
+  });
+  setTimeout(() => input.focus(), 300);
   startGameTimer();
 }
 
@@ -1069,7 +1173,7 @@ function startGameTimer() {
   gameTimer = setInterval(() => {
     gameTimeLeft--;
     updateTimerDisplay();
-    const pct = (gameTimeLeft / 300) * 100;
+    const pct = (gameTimeLeft / gameTotalTime) * 100;
     const fill = document.getElementById('timer-bar-fill');
     if (fill) {
       fill.style.width = pct + '%';
@@ -1094,6 +1198,15 @@ async function endGame(cancelled) {
   if (cancelled) return;
 
   const game = currentGame;
+
+  // Persist all accepted words to the game log
+  if (gameWords.length > 0) {
+    const dateKey = new Date().toISOString().slice(0, 10);
+    try {
+      await Promise.all(gameWords.map(word => dbAdd('game_words', { word, game, dateKey })));
+    } catch(e) {}
+  }
+
   const existing = await dbGet('scores', game);
   const isHighScore = !existing || gameScore > existing.score;
   if (isHighScore) await dbPut('scores', { game, score: gameScore, date: new Date().toISOString() });
