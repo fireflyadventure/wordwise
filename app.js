@@ -218,8 +218,63 @@ function loadGamePhoto() {
 const WORD_SET = new Set(typeof WORD_LIST !== 'undefined' ? WORD_LIST : []);
 const spellCache = new Map();
 
+// Supplementary list for common words missing from the content-filtered 10k list
+const EXTRA_WORDS = new Set((
+  'hell yell dull gull gill sill cull lull mull null bull hull ' +
+  'bell sell tell fell cell well dell jell err burr purr blur ' +
+  'fuzz buzz jazz fizz whiz fizz ' +
+  'awe axe ebb eel elf eon foe fir fur gem gel hem hew hoe hub ' +
+  'lye maw nub ode pew roe rye vim awl elm ivy peg pry raj sap ' +
+  'beg bog bop bud bun cob cog cot cub cud cur din dud fob gag ' +
+  'gob hob jag jig jog jot keg kin lob lop nag nip nix nog pip ' +
+  'rig sup tot urn vex vow yak yam yap ' +
+  'balm bony boon cozy gory hazy helm loon pony puny wavy gravy ' +
+  'blur slur smug snob snug throb thud thug trod trot tryst ' +
+  'drab dreg drip drub drum dusk gust gust husk husk lust must ' +
+  'rust bust just dust crust trust crest brisk crisp ' +
+  'whim whin whip whit writ ' +
+  'clod clop clot clog clam clap clan claw cling clip ' +
+  'blob blot blew blip blimp ' +
+  'flab flag flap flat flaw flay flea fled flew flip flit ' +
+  'glob glop glut glow glum ' +
+  'plod plop plot plow pluck plug plum ' +
+  'slob slop slot slow slug slum slur ' +
+  'snag snap snip snob snod snog snog ' +
+  'span spar spat spew spin spit spot spud spun spur ' +
+  'stab stag slab slam slap star stem stew stir ' +
+  'swab swam swap swat sway swum ' +
+  'twit twos ' +
+  'abet ache acme acne acre afar ague airy akin aloe aloe also ' +
+  'amok anal anew ankh ante anti ants apex apex arcs ' +
+  'bard bawl bray brim brow ' +
+  'calx carb carp cede celt cess chap char chat chef chew chic chop chum ' +
+  'clew cloy clue coax coda coin cola comp cord corp coup coupe cove cowl coy ' +
+  'daft dale damp dank daps dare darn dart daze deft dele dent derp ' +
+  'egad egad epic ' +
+  'fain fake fame fang faze feat fern feud fief file fisc fist fjord flab flan ' +
+  'gait gale garb gawk gaze gibe gild gimp gird girn gist glad glib glob ' +
+  'hale hank hare harm harp hash hasp hast hath haul haunt haven heed hemp hilt ' +
+  'idle iamb icon icky ikon imam imps inch inks inky isle itch itsy ' +
+  'jeer jibe jink jinx jibs joust jowl junk ' +
+  'kale keel keen kelp kerf kern kilt knob knop ' +
+  'lace lain lard lark lath laud lax laze laze lean leer lilt limp lint loll ' +
+  'mace malt mane mare mask mast meld melt mime mint mire mire ' +
+  'naff nape nave neap need neon nebs nick niff nigh nimb nips node noir nosh notch ' +
+  'oafs oaks oast oath oats oboe odds ohms omen omit orbs orca orgy orts ouph ' +
+  'pace pact pang pare pare pave pawl penal pend perk pert pica pier pine pith pixy plaid plie ploy ' +
+  'quad quid quip quit quiz quod ' +
+  'rack raft rake ramp rand rang rant rasp raze reef reek rend rent rick rife rift rime rimy rind rive ' +
+  'sack sage sail sake sang sank sari sash sate saul scab scad scam scamp scar scow seep serf shah shed shin shiv shiv shot shod shrug shun shut ' +
+  'tack tads tale tang tare tart taut teem than thee them then thin this thorn tint tire toad toll tome tong toot torc tote trek trim trio trod trop ' +
+  'ulna urea urge ' +
+  'vale vale vamp vane veld vent verb vibe vole volt vortex vote vouch vroom ' +
+  'wade wail wane warp wary weal weal wean weep weld welt wend whet whim whir wile wisp woad woad woke wolf woof wren writ ' +
+  'yore yogi yuan yurt ' +
+  'zeal zest zinc zing zone zoom zoos'
+).split(' ').filter(Boolean));
+
 function isKnownLocal(w) {
-  if (WORD_SET.has(w) || COMMON_WORDS.has(w)) return true;
+  if (WORD_SET.has(w) || COMMON_WORDS.has(w) || EXTRA_WORDS.has(w)) return true;
   // Accept common inflections of known base words: cats, boxes, walked, running, cities
   const tries = [
     [/s$/, ''], [/es$/, ''], [/ed$/, ''], [/ed$/, 'e'],
@@ -243,7 +298,12 @@ async function verifyWordOnline(word) {
     const t = setTimeout(() => ctrl.abort(), 4000);
     const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, { signal: ctrl.signal });
     clearTimeout(t);
-    if (res.status === 404) { spellCache.set(word, false); return false; }
+    if (res.status === 404) {
+      // Only hard-reject words with zero vowels — those are definitely gibberish.
+      // Real English words the API happens to lack get benefit of the doubt.
+      if (!/[aeiou]/.test(word)) { spellCache.set(word, false); return false; }
+      return null;
+    }
     if (!res.ok) return null;
     spellCache.set(word, true);
     return true;
