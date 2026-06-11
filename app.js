@@ -196,7 +196,7 @@ function loadGamePhoto() {
   fallback?.classList.remove('hidden');
   themeLabel.textContent = themeName;
 
-  // Try to load a real photo in the background; swap in if it arrives in time
+  // Load a random photo from Picsum in the background; swap in when ready
   let swapped = false;
   const giveUp = setTimeout(() => {
     if (!swapped) {
@@ -204,9 +204,8 @@ function loadGamePhoto() {
       photo.onload = null;
       photo.onerror = null;
     }
-  }, 8000);
+  }, 10000);
 
-  photo.dataset.retry = '0';
   photo.onload = () => {
     swapped = true;
     clearTimeout(giveUp);
@@ -215,13 +214,9 @@ function loadGamePhoto() {
   };
   photo.onerror = () => {
     clearTimeout(giveUp);
-    if (photo.dataset.retry === '0') {
-      photo.dataset.retry = '1';
-      photo.src = `https://loremflickr.com/600/380/${combo.join(',')}?lock=${lock + 1}`;
-    }
-    // Both URLs failed — emoji is already visible, nothing more to do
+    // Picsum failed (offline) — emoji is already visible
   };
-  photo.src = `https://loremflickr.com/600/380/${combo.join(',')}/all?lock=${lock}`;
+  photo.src = `https://picsum.photos/seed/${lock}/600/380`;
 }
 
 // ===================== SPELL CHECK =====================
@@ -1274,7 +1269,7 @@ async function endGame(cancelled) {
   const isHighScore = !existing || gameScore > existing.score;
   if (isHighScore) await dbPut('scores', { game, score: gameScore, date: new Date().toISOString() });
 
-  const timeTaken = 300 - Math.max(gameTimeLeft, 0);
+  const timeTaken = gameTotalTime - Math.max(gameTimeLeft, 0);
   const tm = Math.floor(timeTaken / 60);
   const ts = timeTaken % 60;
 
