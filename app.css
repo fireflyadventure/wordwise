@@ -155,6 +155,17 @@ body {
 .greeting { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
 .greeting-sub { font-size: .85rem; color: var(--md-on-surface-var); margin-bottom: 20px; }
 
+.dash-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.dash-stat-card {
+  border-radius: var(--md-radius-lg); padding: 16px 14px;
+  color: #fff; display: flex; flex-direction: column; gap: 4px;
+}
+.dash-stat-card .material-icons-round { font-size: 26px; opacity: .85; margin-bottom: 4px; }
+.dash-stat-num { font-size: 2rem; font-weight: 800; line-height: 1; }
+.dash-stat-label { font-size: .72rem; font-weight: 500; opacity: .9; }
+.dash-collected { background: linear-gradient(135deg, #3730C4, #7C3AED); }
+.dash-recalled  { background: linear-gradient(135deg, #0D9488, #0EA5E9); }
+
 .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
 .stat-box {
   background: #FFF; border-radius: var(--md-radius-md); padding: 12px; text-align: center;

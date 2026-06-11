@@ -515,15 +515,15 @@ function getDailyWords() {
   return words;
 }
 
-function refreshDashboard() {
+async function refreshDashboard() {
   document.getElementById('greeting').textContent = getGreeting();
-  const today = new Date().toISOString().slice(0, 10);
-  const month = today.slice(0, 7);
-  const todayCount = allWords.filter(w => w.dateAdded.startsWith(today)).length;
-  const monthCount = allWords.filter(w => w.dateAdded.startsWith(month)).length;
-  document.getElementById('stat-today').textContent = todayCount;
-  document.getElementById('stat-month').textContent = monthCount;
-  document.getElementById('stat-total').textContent = allWords.length;
+  document.getElementById('stat-collected').textContent = allWords.length;
+  try {
+    const gw = await dbGetAll('game_words');
+    document.getElementById('stat-recalled').textContent = new Set(gw.map(e => e.word)).size;
+  } catch(e) {
+    document.getElementById('stat-recalled').textContent = '0';
+  }
 
   const dw = getDailyWords();
   document.getElementById('daily-words').innerHTML = dw.map(d => `
