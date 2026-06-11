@@ -849,7 +849,7 @@ async function refreshGameLog() {
   try { all = await dbGetAll('game_words'); } catch(e) { all = []; }
 
   const now = new Date();
-  const weekAgo   = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const weekAgo    = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
   const yearStart  = `${now.getFullYear()}-01-01`;
 
@@ -860,26 +860,79 @@ async function refreshGameLog() {
   });
 
   const periodUnique = [...new Set(filtered.map(e => e.word))].sort();
-  const periodLabel  = period === 'week' ? 'this week' : period === 'month' ? 'this month' : 'this year';
+  const total = periodUnique.length;
+
+  const grandEl = document.getElementById('recalled-grand-total');
+  if (grandEl) grandEl.textContent = total;
 
   if (!filtered.length) {
-    el.innerHTML = `
-      <div class="recalled-total">
-        <span class="recalled-num">0</span>
-        <span class="recalled-label">unique words recalled ${periodLabel}</span>
-      </div>
-      <p class="log-empty">Play Fun Zone games to build your recall log!</p>`;
+    el.innerHTML = `<p class="log-empty">Play Fun Zone games to build your recall log!</p>`;
     return;
   }
 
+  // Bar chart data
+  let labels = [], counts = [];
+  if (period === 'week') {
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now); d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      labels.push(['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]);
+      counts.push(filtered.filter(w => w.dateKey === key).length);
+    }
+  } else if (period === 'month') {
+    const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    for (let i = 1; i <= days; i++) {
+      const key = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+      labels.push(i);
+      counts.push(filtered.filter(w => w.dateKey === key).length);
+    }
+  } else {
+    ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].forEach((m, i) => {
+      const key = `${now.getFullYear()}-${String(i+1).padStart(2,'0')}`;
+      labels.push(m);
+      counts.push(filtered.filter(w => w.dateKey.startsWith(key)).length);
+    });
+  }
+  const maxC = Math.max(...counts, 1);
+  const chartHTML = counts.map((c, i) => `
+    <div class="bar-col">
+      <div class="bar ${c > 0 ? 'has-value recalled-bar' : ''}" style="height:${Math.max((c/maxC)*140,2)}px">
+        ${c > 0 ? `<span class="bar-value">${c}</span>` : ''}
+      </div>
+      <span class="bar-label">${labels[i]}</span>
+    </div>`).join('');
+
+  // A-Z letter groups
+  const byLetter = {};
+  for (const w of periodUnique) {
+    const l = w[0].toUpperCase();
+    (byLetter[l] = byLetter[l] || []).push(w);
+  }
+  const letterHTML = Object.keys(byLetter).sort().map(l => `
+    <div class="letter-group">
+      <button class="letter-header">
+        <span class="letter-badge">${l}</span>
+        <span class="letter-count">${byLetter[l].length} word${byLetter[l].length !== 1 ? 's' : ''}</span>
+        <span class="material-icons-round letter-arrow">expand_more</span>
+      </button>
+      <div class="letter-words">
+        ${byLetter[l].map(w => `<span class="log-word">${w}</span>`).join('')}
+      </div>
+    </div>`).join('');
+
   el.innerHTML = `
-    <div class="recalled-total">
-      <span class="recalled-num">${periodUnique.length}</span>
-      <span class="recalled-label">unique words recalled ${periodLabel}</span>
+    <div class="chart-wrap" style="margin-bottom:16px">
+      <div class="bar-chart">${chartHTML}</div>
     </div>
-    <div class="log-words" style="margin-top:12px">
-      ${periodUnique.map(w => `<span class="log-word">${w}</span>`).join('')}
-    </div>`;
+    <div class="letter-groups">${letterHTML}</div>`;
+
+  el.querySelectorAll('.letter-header').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const words = btn.nextElementSibling;
+      const open = words.classList.toggle('open');
+      btn.querySelector('.letter-arrow').textContent = open ? 'expand_less' : 'expand_more';
+    });
+  });
 }
 
 function renderChart(period) {

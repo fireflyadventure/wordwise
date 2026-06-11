@@ -601,24 +601,45 @@ body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem;
   color: var(--md-on-surface-var);
 }
 
-/* ---- RECALLED WORDS TOTAL ---- */
-.recalled-total {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 12px 0 4px;
+/* ---- RECALLED WORDS SECTION ---- */
+.recalled-stats-total {
+  display: flex; align-items: center; gap: 12px; padding: 16px;
+  background: linear-gradient(135deg, #0D9488, #0EA5E9);
+  color: #FFF; border-radius: var(--md-radius-lg); margin-bottom: 16px;
 }
-.recalled-num {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--md-primary);
-  line-height: 1;
+.recalled-stats-total .material-icons-round { font-size: 40px; opacity: .8; }
+
+.bar.has-value.recalled-bar {
+  background: linear-gradient(180deg, #06B6D4, #0D9488);
 }
-.recalled-label {
-  font-size: .82rem;
-  color: var(--md-on-surface-var);
-  font-weight: 500;
+
+/* ---- LETTER ACCORDION ---- */
+.letter-groups { margin-top: 4px; }
+.letter-group { border-bottom: 1px solid var(--md-outline-var); }
+.letter-group:last-child { border-bottom: none; }
+
+.letter-header {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 11px 4px; background: none; border: none; cursor: pointer;
 }
+.letter-badge {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: var(--md-tertiary-container); color: var(--md-tertiary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; font-weight: 700;
+}
+.letter-count {
+  flex: 1; font-size: .82rem; color: var(--md-on-surface-var);
+  font-weight: 500; text-align: left;
+}
+.letter-arrow {
+  font-size: 20px; color: var(--md-on-surface-var);
+  transition: transform .2s;
+}
+.letter-words {
+  display: none; flex-wrap: wrap; gap: 6px; padding: 0 4px 12px;
+}
+.letter-words.open { display: flex; }
 
 /* ---- GAME WORD LOG ---- */
 .log-day { margin-top: 16px; }

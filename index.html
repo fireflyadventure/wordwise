@@ -151,15 +151,21 @@
     <div id="milestones"></div>
   </div>
 
-  <div class="card mt-16">
-    <div class="card-title"><span class="material-icons-round">sports_esports</span> Recalled Words in Fun Zone</div>
-    <div class="chip-row" id="log-period" style="margin-top:12px">
-      <button class="chip active" data-period="week">This Week</button>
-      <button class="chip" data-period="month">This Month</button>
-      <button class="chip" data-period="year">This Year</button>
+  <div class="recalled-stats-total">
+    <span class="material-icons-round">sports_esports</span>
+    <div>
+      <div class="stats-total-num" id="recalled-grand-total">—</div>
+      <div class="stats-total-label">Words Recalled in Fun Zone</div>
     </div>
-    <div id="game-log"></div>
   </div>
+
+  <div class="chip-row" id="log-period">
+    <button class="chip active" data-period="week">This Week</button>
+    <button class="chip" data-period="month">This Month</button>
+    <button class="chip" data-period="year">This Year</button>
+  </div>
+
+  <div id="game-log"></div>
 </section>
 
 <!-- ============ ADD WORD MODAL ============ -->
