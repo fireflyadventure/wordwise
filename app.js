@@ -846,7 +846,7 @@ async function refreshGameLog() {
   const el = document.getElementById('game-log');
   if (!el) return;
 
-  const period = document.querySelector('#log-period .chip.active')?.dataset.period || 'today';
+  const period = document.querySelector('#log-period .chip.active')?.dataset.period || 'week';
   let all;
   try { all = await dbGetAll('game_words'); } catch(e) { all = []; }
 
@@ -854,38 +854,75 @@ async function refreshGameLog() {
   const today = now.toISOString().slice(0, 10);
   const weekAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  const yearStart  = `${now.getFullYear()}-01-01`;
 
   const filtered = all.filter(w => {
-    if (period === 'today') return w.dateKey === today;
     if (period === 'week')  return w.dateKey >= weekAgo;
-    return w.dateKey >= monthStart;
+    if (period === 'month') return w.dateKey >= monthStart;
+    return w.dateKey >= yearStart;
   });
 
+  // Unique words for the selected period
+  const periodUnique = [...new Set(filtered.map(e => e.word))].sort();
+  // All unique words ever (for See All)
+  const allUniqueWords = [...new Set(all.map(e => e.word))].sort();
+
+  const periodLabel = period === 'week' ? 'this week' : period === 'month' ? 'this month' : 'this year';
+
   if (!filtered.length) {
-    el.innerHTML = '<p class="log-empty">No game words yet. Play a Fun Zone game!</p>';
+    el.innerHTML = `
+      <div class="recalled-total">
+        <span class="recalled-num">0</span>
+        <span class="recalled-label">unique words recalled ${periodLabel}</span>
+      </div>
+      <p class="log-empty">Play Fun Zone games to build your recall log!</p>`;
     return;
   }
 
-  // Group by date, deduplicate words per day
+  // Group by date, deduplicate per day
   const byDate = {};
   for (const entry of filtered) {
     if (!byDate[entry.dateKey]) byDate[entry.dateKey] = new Set();
     byDate[entry.dateKey].add(entry.word);
   }
-
   const dates = Object.keys(byDate).sort().reverse();
-  el.innerHTML = dates.map(dk => {
-    const words = [...byDate[dk]].sort();
-    const label = dk === today ? 'Today' : formatDate(dk + 'T12:00:00');
-    return `
-      <div class="log-day">
-        <div class="log-date-row">
-          <span class="log-date">${label}</span>
-          <span class="log-count">${words.length} word${words.length !== 1 ? 's' : ''}</span>
-        </div>
-        <div class="log-words">${words.map(w => `<span class="log-word">${w}</span>`).join('')}</div>
-      </div>`;
-  }).join('');
+
+  el.innerHTML = `
+    <div class="recalled-total">
+      <span class="recalled-num">${periodUnique.length}</span>
+      <span class="recalled-label">unique words recalled ${periodLabel}</span>
+    </div>
+    ${dates.map(dk => {
+      const words = [...byDate[dk]].sort();
+      const label = dk === today ? 'Today' : formatDate(dk + 'T12:00:00');
+      return `
+        <div class="log-day">
+          <div class="log-date-row">
+            <span class="log-date">${label}</span>
+            <span class="log-count">${words.length} word${words.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="log-words">${words.map(w => `<span class="log-word">${w}</span>`).join('')}</div>
+        </div>`;
+    }).join('')}
+    <button class="btn btn-tonal see-all-btn" id="see-all-words" style="width:100%;margin-top:16px">
+      <span class="material-icons-round">sort_by_alpha</span>
+      See All ${allUniqueWords.length} Recalled Words (A–Z)
+    </button>
+    <div class="all-words-panel hidden" id="all-words-panel">
+      <div class="log-date-row" style="margin-top:12px">
+        <span class="log-date">All Time</span>
+        <span class="log-count">${allUniqueWords.length} unique words</span>
+      </div>
+      <div class="log-words" style="margin-top:8px">${allUniqueWords.map(w => `<span class="log-word">${w}</span>`).join('')}</div>
+    </div>`;
+
+  document.getElementById('see-all-words')?.addEventListener('click', function () {
+    const panel = document.getElementById('all-words-panel');
+    const hidden = panel.classList.toggle('hidden');
+    this.innerHTML = hidden
+      ? `<span class="material-icons-round">sort_by_alpha</span> See All ${allUniqueWords.length} Recalled Words (A–Z)`
+      : `<span class="material-icons-round">expand_less</span> Hide Full List`;
+  });
 }
 
 function renderChart(period) {
