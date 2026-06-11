@@ -182,19 +182,14 @@ let addWordChecking = false;
 // ===================== GAME PHOTO =====================
 function loadGamePhoto() {
   const photo = document.getElementById('prompt-photo');
-  const themeLabel = document.getElementById('image-theme');
   const fallback = document.getElementById('emoji-fallback');
   if (!photo) return;
 
-  const combo = PHOTO_THEMES[Math.floor(Math.random() * PHOTO_THEMES.length)];
   const lock = Math.floor(Math.random() * 100000);
-  gameState.photoCombo = combo;
-  const themeName = combo.map(w => w[0].toUpperCase() + w.slice(1)).join(' & ');
 
   // Show emoji scene immediately so the game is always playable
   photo.classList.add('hidden');
   fallback?.classList.remove('hidden');
-  themeLabel.textContent = themeName;
 
   // Load a random photo from Picsum in the background; swap in when ready
   let swapped = false;
@@ -1009,7 +1004,6 @@ function startGame(type) {
     area.innerHTML = `
       <div class="game-prompt">
         <div class="prompt-top">
-          <div class="prompt-label" id="image-theme">Loading picture...</div>
           <button class="shuffle-btn" id="shuffle-img" title="Change picture">
             <span class="material-icons-round">shuffle</span>
           </button>
