@@ -186,32 +186,33 @@ function loadGamePhoto() {
   if (!photo) return;
 
   const lock = Math.floor(Math.random() * 100000);
+  const url = `https://picsum.photos/seed/${lock}/600/380`;
 
-  // Show emoji scene immediately so the game is always playable
-  photo.classList.add('hidden');
-  fallback?.classList.remove('hidden');
+  // On first load show emoji while waiting; on shuffle keep current view
+  const firstLoad = !photo.src || photo.classList.contains('hidden');
+  if (firstLoad) {
+    photo.classList.add('hidden');
+    fallback?.classList.remove('hidden');
+  }
 
-  // Load a random photo from Picsum in the background; swap in when ready
-  let swapped = false;
-  const giveUp = setTimeout(() => {
-    if (!swapped) {
-      photo.src = '';
-      photo.onload = null;
-      photo.onerror = null;
-    }
-  }, 10000);
+  // Preload into a temp image — swap the visible element only when ready
+  const tmp = new Image();
+  const giveUp = setTimeout(() => { tmp.src = ''; }, 10000);
 
-  photo.onload = () => {
-    swapped = true;
+  tmp.onload = () => {
     clearTimeout(giveUp);
+    photo.src = url;
     photo.classList.remove('hidden');
     fallback?.classList.add('hidden');
   };
-  photo.onerror = () => {
+  tmp.onerror = () => {
     clearTimeout(giveUp);
-    // Picsum failed (offline) — emoji is already visible
+    // Offline or failed — emoji stays visible (already shown on first load)
+    if (!firstLoad) {
+      // Keep whatever was showing before shuffle
+    }
   };
-  photo.src = `https://picsum.photos/seed/${lock}/600/380`;
+  tmp.src = url;
 }
 
 // ===================== SPELL CHECK =====================

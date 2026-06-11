@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wordwise-v26';
+const CACHE_NAME = 'wordwise-v27';
 const ASSETS = [
   './',
   './index.html',
@@ -27,6 +27,9 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Let image CDN requests go directly to the network — no SW interference
+  if (e.request.url.includes('picsum.photos')) return;
+
   if (e.request.url.includes('api.dictionaryapi.dev')) {
     e.respondWith(
       fetch(e.request)
