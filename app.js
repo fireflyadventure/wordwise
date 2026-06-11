@@ -916,7 +916,7 @@ window.addEventListener('beforeinstallprompt', e => {
 window.addEventListener('appinstalled', () => {
   deferredInstallPrompt = null;
   document.getElementById('install-banner')?.classList.add('hidden');
-  showSnackbar('WordWise installed! Find it on your home screen');
+  showSnackbar('Apexlex installed! Find it on your home screen');
 });
 
 document.getElementById('install-btn')?.addEventListener('click', async () => {

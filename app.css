@@ -1,25 +1,30 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --md-primary: #2E7D52;
+  /* Apexlex brand palette - indigo primary from the logo (#3730C4) */
+  --md-primary: #3730C4;
   --md-on-primary: #FFFFFF;
-  --md-primary-container: #B2F1C8;
-  --md-on-primary-container: #002113;
-  --md-secondary: #4E6355;
+  --md-primary-container: #E2E0FF;
+  --md-on-primary-container: #120A8F;
+  --md-secondary: #EC4899;
   --md-on-secondary: #FFFFFF;
-  --md-secondary-container: #D0E8D6;
-  --md-tertiary: #3C6472;
-  --md-tertiary-container: #BFE9FA;
-  --md-surface: #F6FBF4;
-  --md-surface-cv: #EDF2EA;
-  --md-surface-high: #E2E8DF;
-  --md-on-surface: #191D1A;
-  --md-on-surface-var: #414942;
-  --md-outline: #717971;
-  --md-outline-var: #C1C9BF;
-  --md-error: #BA1A1A;
+  --md-secondary-container: #FFE0EE;
+  --md-tertiary: #0D9488;
+  --md-tertiary-container: #CCF5F0;
+  --md-amber: #F59E0B;
+  --md-amber-container: #FEF0C7;
+  --md-violet: #7C3AED;
+  --md-surface: #F7F6FF;
+  --md-surface-cv: #ECEAFB;
+  --md-surface-high: #E0DDF6;
+  --md-on-surface: #1A1740;
+  --md-on-surface-var: #4B4769;
+  --md-outline: #767293;
+  --md-outline-var: #C8C5E0;
+  --md-error: #E11D48;
   --md-on-error: #FFFFFF;
-  --md-shadow: rgba(0,0,0,.12);
+  --md-shadow: rgba(55, 48, 196, .14);
+  --md-gradient: linear-gradient(135deg, #3730C4, #7C3AED 55%, #EC4899);
   --md-radius-sm: 8px;
   --md-radius-md: 12px;
   --md-radius-lg: 16px;
@@ -138,7 +143,7 @@ body {
 .fab {
   position: fixed; bottom: calc(var(--nav-height) + 16px); right: 16px;
   width: 56px; height: 56px; border-radius: var(--md-radius-lg);
-  background: var(--md-primary-container); color: var(--md-on-primary-container);
+  background: var(--md-gradient); color: #FFF;
   border: none; box-shadow: 0 4px 12px var(--md-shadow); cursor: pointer;
   display: flex; align-items: center; justify-content: center; z-index: 50;
   transition: .2s;
@@ -153,10 +158,21 @@ body {
 .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
 .stat-box {
   background: #FFF; border-radius: var(--md-radius-md); padding: 12px; text-align: center;
-  box-shadow: 0 1px 3px var(--md-shadow);
+  box-shadow: 0 1px 3px var(--md-shadow); border-top: 3px solid var(--md-primary);
 }
+.stat-box:nth-child(2) { border-top-color: var(--md-secondary); }
+.stat-box:nth-child(3) { border-top-color: var(--md-tertiary); }
 .stat-num { font-size: 1.6rem; font-weight: 700; color: var(--md-primary); }
+.stat-box:nth-child(2) .stat-num { color: var(--md-secondary); }
+.stat-box:nth-child(3) .stat-num { color: var(--md-tertiary); }
 .stat-label { font-size: .7rem; color: var(--md-on-surface-var); margin-top: 2px; }
+
+.brand-mark {
+  font-size: 1.15rem; font-weight: 800; letter-spacing: -.5px;
+  background: var(--md-gradient);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; margin-bottom: 2px;
+}
 
 .daily-word {
   display: flex; align-items: center; gap: 12px;
@@ -166,7 +182,7 @@ body {
 .daily-word:last-child { border-bottom: none; }
 .daily-word:active { background: var(--md-surface-cv); border-radius: var(--md-radius-sm); }
 .dw-word { font-weight: 600; font-size: .95rem; }
-.dw-pos { font-size: .7rem; color: var(--md-primary); background: var(--md-primary-container); padding: 2px 8px; border-radius: 10px; }
+.dw-pos { font-size: .7rem; color: var(--md-secondary); background: var(--md-secondary-container); padding: 2px 8px; border-radius: 10px; }
 .dw-meaning { font-size: .8rem; color: var(--md-on-surface-var); margin-top: 2px; }
 
 /* ---- DICTIONARY LIST ---- */
@@ -239,7 +255,7 @@ body {
   background: var(--md-primary-container); transition: height .4s ease;
   min-height: 2px; position: relative;
 }
-.bar.has-value { background: var(--md-primary); }
+.bar.has-value { background: linear-gradient(180deg, var(--md-violet), var(--md-primary)); }
 .bar-label { font-size: .6rem; color: var(--md-on-surface-var); }
 .bar-value {
   font-size: .6rem; font-weight: 600; color: var(--md-primary);
@@ -247,7 +263,7 @@ body {
 }
 .stats-total {
   display: flex; align-items: center; gap: 12px; padding: 16px;
-  background: linear-gradient(135deg, var(--md-primary), #1B5E40);
+  background: var(--md-gradient);
   color: #FFF; border-radius: var(--md-radius-lg); margin-bottom: 16px;
 }
 .stats-total .material-icons-round { font-size: 40px; opacity: .8; }
@@ -263,6 +279,15 @@ body {
 }
 .game-card:active { transform: scale(.96); border-color: var(--md-primary); }
 .game-card .material-icons-round { font-size: 36px; color: var(--md-primary); margin-bottom: 8px; }
+/* Each game gets its own brand accent */
+.game-card[data-game="chain"] { background: var(--md-primary-container); }
+.game-card[data-game="chain"] .material-icons-round { color: var(--md-primary); }
+.game-card[data-game="image"] { background: var(--md-secondary-container); }
+.game-card[data-game="image"] .material-icons-round { color: var(--md-secondary); }
+.game-card[data-game="maker"] { background: var(--md-amber-container); }
+.game-card[data-game="maker"] .material-icons-round { color: var(--md-amber); }
+.game-card[data-game="az"] { background: var(--md-tertiary-container); }
+.game-card[data-game="az"] .material-icons-round { color: var(--md-tertiary); }
 .game-card h3 { font-size: .85rem; font-weight: 600; margin-bottom: 4px; }
 .game-card p { font-size: .7rem; color: var(--md-on-surface-var); }
 .game-card .high-score { font-size: .7rem; color: var(--md-tertiary); font-weight: 600; margin-top: 6px; }
@@ -441,7 +466,7 @@ body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem;
 /* ---- INSTALL BANNER ---- */
 .install-banner {
   display: flex; align-items: center; gap: 12px;
-  background: linear-gradient(135deg, var(--md-primary), #1B5E40);
+  background: var(--md-gradient);
   color: #FFF; border-radius: var(--md-radius-lg);
   padding: 14px 16px; margin-bottom: 16px;
   box-shadow: 0 2px 8px var(--md-shadow);

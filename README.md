@@ -1,6 +1,6 @@
-# WordWise 📗
+# Apexlex 📘
 
-A simple, offline-first English word collection app for language learners. Built with vanilla HTML/CSS/JS and Material Design — no frameworks, no build step.
+A simple, offline-first English word collection app for language learners. Built with vanilla HTML/CSS/JS and Material Design in the Apexlex brand palette (indigo, violet, pink, teal) — no frameworks, no build step.
 
 **Live app:** https://fireflyadventure.github.io/wordwise/
 
@@ -28,5 +28,5 @@ powershell -ExecutionPolicy Bypass -File server.ps1   # serves on http://localho
 ## Install on your phone
 
 1. Open the live URL in Chrome on Android
-2. Tap the ⋮ menu → **Add to Home screen**
-3. The app opens full-screen and works without internet
+2. Tap the ⋮ menu → **Add to Home screen** (or use the in-app Install banner)
+3. Apexlex opens full-screen and works without internet
