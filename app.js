@@ -188,31 +188,24 @@ function loadGamePhoto() {
   const lock = Math.floor(Math.random() * 100000);
   const url = `https://picsum.photos/seed/${lock}/600/380`;
 
-  // On first load show emoji while waiting; on shuffle keep current view
-  const firstLoad = !photo.src || photo.classList.contains('hidden');
-  if (firstLoad) {
+  // Show photo element immediately (CSS background acts as placeholder); hide emoji
+  photo.classList.remove('hidden');
+  fallback?.classList.add('hidden');
+  photo.src = '';
+
+  const giveUp = setTimeout(() => {
+    photo.onload = null; photo.onerror = null;
     photo.classList.add('hidden');
     fallback?.classList.remove('hidden');
-  }
+  }, 10000);
 
-  // Preload into a temp image — swap the visible element only when ready
-  const tmp = new Image();
-  const giveUp = setTimeout(() => { tmp.src = ''; }, 10000);
-
-  tmp.onload = () => {
+  photo.onload = () => { clearTimeout(giveUp); };
+  photo.onerror = () => {
     clearTimeout(giveUp);
-    photo.src = url;
-    photo.classList.remove('hidden');
-    fallback?.classList.add('hidden');
+    photo.classList.add('hidden');
+    fallback?.classList.remove('hidden');
   };
-  tmp.onerror = () => {
-    clearTimeout(giveUp);
-    // Offline or failed — emoji stays visible (already shown on first load)
-    if (!firstLoad) {
-      // Keep whatever was showing before shuffle
-    }
-  };
-  tmp.src = url;
+  photo.src = url;
 }
 
 // ===================== SPELL CHECK =====================
@@ -1062,11 +1055,6 @@ function startGame(type) {
     gameState.imagePrompt = prompt;
     area.innerHTML = `
       <div class="game-prompt">
-        <div class="prompt-top">
-          <button class="shuffle-btn" id="shuffle-img" title="Change picture">
-            <span class="material-icons-round">shuffle</span>
-          </button>
-        </div>
         <img class="prompt-photo" id="prompt-photo" alt="Picture to describe">
         <div class="prompt-image hidden" id="emoji-fallback">${prompt.emoji}</div>
         <div class="prompt-hint">Type words about this picture - objects, colors, feelings</div>
@@ -1076,7 +1064,6 @@ function startGame(type) {
         <button class="btn btn-primary" id="game-submit"><span class="material-icons-round">send</span></button>
       </div>
       <div class="word-tags" id="game-tags"></div>`;
-    document.getElementById('shuffle-img').addEventListener('click', loadGamePhoto);
     loadGamePhoto();
   } else if (type === 'maker') {
     const source = MAKER_WORDS[Math.floor(Math.random() * MAKER_WORDS.length)];
