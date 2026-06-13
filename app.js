@@ -405,12 +405,14 @@ document.getElementById('welcome-name')?.addEventListener('keydown', e => {
 // Avatar -> profile sheet
 document.getElementById('avatar-btn')?.addEventListener('click', () => {
   document.getElementById('profile-name').value = getProfile()?.name || '';
+  document.getElementById('profile-mwkey').value = getMWKey();
   document.getElementById('modal-profile').classList.add('active');
 });
 document.getElementById('profile-save')?.addEventListener('click', () => {
   const name = document.getElementById('profile-name').value.trim();
   if (!name) { document.getElementById('profile-name').focus(); return; }
   saveProfile(name);
+  try { localStorage.setItem('apexlex-mw-key', document.getElementById('profile-mwkey').value.trim()); } catch (_) {}
   document.getElementById('modal-profile').classList.remove('active');
   applyProfile();
   showSnackbar('Profile updated!');
@@ -609,6 +611,87 @@ function simplifyDefinition(text) {
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 }
 
+// ---- Word lookup ----------------------------------------------------------
+// Prefer the Merriam-Webster Learner's Dictionary (simple, learner-friendly
+// wording) when an API key is set; otherwise use the free Wiktionary-based
+// dictionary. Both return {word, phonetic, audioUrl, meanings, sentences}.
+function getMWKey() {
+  try { return (localStorage.getItem('apexlex-mw-key') || '').trim(); } catch { return ''; }
+}
+
+function mwAudioUrl(audio) {
+  if (!audio) return '';
+  let sub;
+  if (/^bix/.test(audio)) sub = 'bix';
+  else if (/^gg/.test(audio)) sub = 'gg';
+  else if (/^[^a-zA-Z]/.test(audio)) sub = 'number';
+  else sub = audio[0];
+  return `https://media.merriam-webster.com/audio/prons/en/us/mp3/${sub}/${audio}.mp3`;
+}
+
+function parseMWLearners(json, word) {
+  // MW returns an array of strings (spelling suggestions) when there's no
+  // exact entry — only proceed when we got real entry objects.
+  if (!Array.isArray(json) || !json.length || typeof json[0] !== 'object' || !json[0].meta) return null;
+  const byPos = {};
+  const order = [];
+  let phonetic = '', audioUrl = '';
+  for (const entry of json) {
+    const hw = (entry.hwi?.hw || '').replace(/[*·]/g, '').toLowerCase();
+    const idBase = (entry.meta?.id || '').split(':')[0].toLowerCase();
+    const stems = (entry.meta?.stems || []).map(s => s.toLowerCase());
+    if (hw !== word && idBase !== word && !stems.includes(word)) continue;  // this word (or an inflection) only
+    const defs = (entry.shortdef || []).filter(Boolean);
+    if (!defs.length) continue;
+    const pos = entry.fl || 'word';
+    if (!byPos[pos]) { byPos[pos] = []; order.push(pos); }
+    byPos[pos].push(...defs);
+    const prs = entry.hwi?.prs?.[0];
+    if (!phonetic && prs?.mw) phonetic = `/${prs.mw}/`;
+    if (!audioUrl && prs?.sound?.audio) audioUrl = mwAudioUrl(prs.sound.audio);
+  }
+  if (!order.length) return null;
+  const meanings = order.map(pos => ({
+    partOfSpeech: pos,
+    definitions: byPos[pos].slice(0, 3).map(d => ({ definition: d }))
+  }));
+  return { word, phonetic, audioUrl, meanings, sentences: [], source: 'learners' };
+}
+
+async function lookupWordData(word) {
+  word = word.trim().toLowerCase();
+  const key = getMWKey();
+  // 1) Merriam-Webster Learner's Dictionary — simplest, kid-friendly wording
+  if (key) {
+    try {
+      const r = await fetch(`https://www.dictionaryapi.com/api/v3/references/learners/json/${encodeURIComponent(word)}?key=${encodeURIComponent(key)}`);
+      if (r.ok) {
+        const parsed = parseMWLearners(await r.json(), word);
+        if (parsed) return parsed;
+      }
+    } catch (_) {}
+  }
+  // 2) Free Wiktionary-based dictionary (no key) — fallback
+  try {
+    const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    if (r.ok) {
+      const entry = (await r.json())[0];
+      const meanings = entry.meanings || [];
+      const sentences = [];
+      meanings.forEach(m => m.definitions?.forEach(d => { if (d.example) sentences.push(d.example); }));
+      return {
+        word: entry.word || word,
+        phonetic: entry.phonetic || entry.phonetics?.[0]?.text || '',
+        audioUrl: entry.phonetics?.find(p => p.audio)?.audio || '',
+        meanings,
+        sentences,
+        source: 'wiktionary'
+      };
+    }
+  } catch (_) {}
+  return null;
+}
+
 async function showWordDetail(word, isDaily) {
   navigate('detail');
   const container = document.getElementById('detail-content');
@@ -623,23 +706,7 @@ async function showWordDetail(word, isDaily) {
   }
 
   if (!data) {
-    try {
-      const resp = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-      if (resp.ok) {
-        const json = await resp.json();
-        const entry = json[0];
-        data = {
-          word: entry.word,
-          phonetic: entry.phonetic || (entry.phonetics?.[0]?.text) || '',
-          audioUrl: entry.phonetics?.find(p => p.audio)?.audio || '',
-          meanings: entry.meanings || [],
-          sentences: []
-        };
-        entry.meanings?.forEach(m => {
-          m.definitions?.forEach(d => { if (d.example) data.sentences.push(d.example); });
-        });
-      }
-    } catch (_) {}
+    data = await lookupWordData(word);
   }
 
   if (!data) {
@@ -845,20 +912,10 @@ document.getElementById('add-word-input')?.addEventListener('input', () => {
 
 async function addWord(word) {
   word = word.trim().toLowerCase();
-  let definition = '';
-  let meanings = [];
-  let sentences = [];
-
-  try {
-    const resp = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    if (resp.ok) {
-      const json = await resp.json();
-      const entry = json[0];
-      meanings = entry.meanings || [];
-      definition = meanings[0]?.definitions?.[0]?.definition || '';
-      meanings.forEach(m => m.definitions?.forEach(d => { if (d.example) sentences.push(d.example); }));
-    }
-  } catch (_) {}
+  const looked = await lookupWordData(word);
+  const meanings = looked?.meanings || [];
+  const sentences = looked?.sentences || [];
+  const definition = meanings[0]?.definitions?.[0]?.definition || '';
 
   const data = {
     word,
