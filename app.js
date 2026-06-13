@@ -636,17 +636,49 @@ async function showWordDetail(word, isDaily) {
     };
   }
 
-  while (data.sentences.length < 5) {
-    const templates = [
-      `I use the word "${data.word}" in my daily conversation.`,
-      `Can you explain the meaning of "${data.word}"?`,
-      `The teacher asked us to use "${data.word}" in a sentence.`,
-      `She learned the word "${data.word}" from a newspaper article.`,
-      `Understanding "${data.word}" will improve your vocabulary.`,
-      `He looked up "${data.word}" in the dictionary.`,
-      `The word "${data.word}" appears frequently in English.`
-    ];
-    data.sentences.push(templates[data.sentences.length % templates.length]);
+  // Fill up to 5 with sentences that actually USE the word in context.
+  // Real dictionary examples (harvested above) come first; these
+  // part-of-speech-aware frames only fill the gap when the API has none.
+  if (data.sentences.length < 5) {
+    const w = data.word;
+    const posList = (data.meanings || []).map(m => (m.partOfSpeech || '').toLowerCase());
+    const pos = ['verb', 'adjective', 'adverb', 'noun'].find(p => posList.includes(p)) || 'noun';
+    const FRAMES = {
+      verb: [
+        `Learning to ${w} takes time and patience.`,
+        `She has learned how to ${w} properly.`,
+        `It is not always easy to ${w}.`,
+        `They will ${w} as soon as they are ready.`,
+        `We should ${w} whenever it is needed.`
+      ],
+      noun: [
+        `The ${w} was clear to everyone in the room.`,
+        `They talked about the ${w} for a long time.`,
+        `Her ${w} made a strong impression on us.`,
+        `We need to think about the ${w} more carefully.`,
+        `This ${w} matters a great deal in real life.`
+      ],
+      adjective: [
+        `It seemed very ${w} to everyone there.`,
+        `Everyone agreed that it was quite ${w}.`,
+        `The whole thing felt rather ${w} to me.`,
+        `That was a truly ${w} way to handle it.`,
+        `In the end, it all seemed ${w}.`
+      ],
+      adverb: [
+        `She spoke ${w} during the whole meeting.`,
+        `He finished the work ${w} and went home.`,
+        `They handled the situation ${w}.`,
+        `Everything turned out ${w} in the end.`,
+        `We moved ${w} toward our goal.`
+      ]
+    };
+    const frames = FRAMES[pos];
+    let i = 0;
+    while (data.sentences.length < 5) {
+      data.sentences.push(frames[i % frames.length]);
+      i++;
+    }
   }
 
   container.innerHTML = `
