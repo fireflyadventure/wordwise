@@ -593,6 +593,22 @@ document.getElementById('dict-list')?.addEventListener('click', e => {
 });
 
 // ===================== WORD DETAIL =====================
+// Keep meanings simple enough for a 10-year-old: drop dictionary usage
+// labels like "(chiefly in the plural)" / "(transitive)" and trim long
+// synonym chains ("to restrict; to keep within bounds; to shut...") down
+// to the first couple of senses.
+function simplifyDefinition(text) {
+  if (!text) return text;
+  let t = String(text).trim();
+  // Remove a leading usage label in parentheses (allows one level of nesting)
+  t = t.replace(/^\((?:[^()]|\([^()]*\))*\)\s*/, '');
+  // Keep only the first two semicolon-separated senses
+  const parts = t.split(/;\s*/);
+  if (parts.length > 2) t = parts.slice(0, 2).join('; ');
+  t = t.trim();
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+}
+
 async function showWordDetail(word, isDaily) {
   navigate('detail');
   const container = document.getElementById('detail-content');
@@ -691,7 +707,7 @@ async function showWordDetail(word, isDaily) {
     ${data.meanings.map(m => `
       <div class="meaning-block">
         <div class="meaning-pos">${m.partOfSpeech}</div>
-        ${m.definitions.slice(0, 3).map(d => `<div class="meaning-def">${d.definition}</div>`).join('')}
+        ${m.definitions.slice(0, 3).map(d => `<div class="meaning-def">${simplifyDefinition(d.definition)}</div>`).join('')}
       </div>
     `).join('')}
 
