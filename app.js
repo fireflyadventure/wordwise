@@ -829,7 +829,6 @@ function refreshStats() {
   document.getElementById('stats-all-total').textContent = allWords.length;
   const period = document.querySelector('#stats-period .chip.active')?.dataset.period || 'week';
   renderChart(period);
-  renderMilestones();
   refreshGameLog();
 }
 
@@ -858,12 +857,8 @@ async function refreshGameLog() {
   const grandEl = document.getElementById('recalled-grand-total');
   if (grandEl) grandEl.textContent = total;
 
-  if (!filtered.length) {
-    el.innerHTML = `<p class="log-empty">Play Fun Zone games to build your recall log!</p>`;
-    return;
-  }
-
-  // Bar chart data
+  // Bar chart data — always rendered (even with no data) so this section
+  // mirrors the Words Collected chart above instead of vanishing
   let labels = [], counts = [];
   if (period === 'week') {
     for (let i = 6; i >= 0; i--) {
@@ -895,6 +890,16 @@ async function refreshGameLog() {
       <span class="bar-label">${labels[i]}</span>
     </div>`).join('');
 
+  const chartWrap = `
+    <div class="chart-wrap" style="margin-bottom:16px">
+      <div class="bar-chart">${chartHTML}</div>
+    </div>`;
+
+  if (!filtered.length) {
+    el.innerHTML = chartWrap + `<p class="log-empty">Play Fun Zone games to build your recall log!</p>`;
+    return;
+  }
+
   // A-Z letter tabs + word panel
   const byLetter = {};
   for (const w of periodUnique) {
@@ -915,10 +920,7 @@ async function refreshGameLog() {
       </div>
     </div>`;
 
-  el.innerHTML = `
-    <div class="chart-wrap" style="margin-bottom:16px">
-      <div class="bar-chart">${chartHTML}</div>
-    </div>
+  el.innerHTML = chartWrap + `
     <div class="letter-tabs">
       ${letters.map(l => `<button class="letter-tab${l === firstLetter ? ' active' : ''}" data-letter="${l}">${l}</button>`).join('')}
     </div>
@@ -970,22 +972,6 @@ function renderChart(period) {
       <span class="bar-label">${labels[i]}</span>
     </div>
   `).join('');
-}
-
-function renderMilestones() {
-  const milestones = [10, 25, 50, 100, 250, 500, 1000];
-  const total = allWords.length;
-  document.getElementById('milestones').innerHTML = milestones.map(m => {
-    const done = total >= m;
-    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--md-outline-var)">
-      <span class="material-icons-round" style="color:${done ? 'var(--md-primary)' : 'var(--md-outline-var)'}">${done ? 'emoji_events' : 'radio_button_unchecked'}</span>
-      <div style="flex:1">
-        <div style="font-weight:600;font-size:.9rem">${m} Words</div>
-        <div style="font-size:.75rem;color:var(--md-on-surface-var)">${done ? 'Achieved!' : `${m - total} more to go`}</div>
-      </div>
-      ${done ? '<span style="font-size:.75rem;font-weight:600;color:var(--md-primary)">Done</span>' : `<span style="font-size:.75rem;color:var(--md-on-surface-var)">${Math.round(total/m*100)}%</span>`}
-    </div>`;
-  }).join('');
 }
 
 document.getElementById('stats-period')?.addEventListener('click', e => {
