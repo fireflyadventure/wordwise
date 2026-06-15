@@ -126,6 +126,7 @@
       <span id="timer-text">5:00</span>
     </div>
     <div class="score-display">Score: <span id="game-score">0</span></div>
+    <button class="icon-btn" id="game-help" title="How to play"><span class="material-icons-round">help_outline</span></button>
   </div>
   <div class="timer-bar"><div class="timer-bar-fill" id="timer-bar-fill"></div></div>
   <div id="game-area"></div>
@@ -251,6 +252,21 @@
 </div>
 
 <input type="file" id="backup-file" accept=".json,application/json" class="hidden">
+
+<!-- ============ GAME TUTORIAL ============ -->
+<div class="tutorial-overlay" id="tutorial-overlay">
+  <div class="tutorial-card">
+    <div class="tutorial-step-label" id="tutorial-step-label"></div>
+    <div class="tutorial-icon" id="tutorial-icon"></div>
+    <h2 class="tutorial-title" id="tutorial-title"></h2>
+    <p class="tutorial-text" id="tutorial-text"></p>
+    <div class="tutorial-dots" id="tutorial-dots"></div>
+    <div class="tutorial-actions">
+      <button class="tutorial-skip" id="tutorial-skip">Skip</button>
+      <button class="btn btn-primary" id="tutorial-next">Next</button>
+    </div>
+  </div>
+</div>
 
 <!-- SNACKBAR -->
 <div class="snackbar" id="snackbar"></div>

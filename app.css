@@ -719,6 +719,46 @@ body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem;
   padding: 20px 0 8px;
 }
 
+/* ---- GAME TUTORIAL ---- */
+.tutorial-overlay {
+  position: fixed; inset: 0; z-index: 1200;
+  background: rgba(20, 16, 60, .62);
+  display: none; align-items: center; justify-content: center; padding: 24px;
+}
+.tutorial-overlay.active { display: flex; }
+.tutorial-card {
+  background: #fff; border-radius: var(--md-radius-xl);
+  padding: 26px 24px 18px; max-width: 360px; width: 100%; text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .3); animation: tut-pop .25s ease;
+}
+@keyframes tut-pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.tutorial-step-label {
+  font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--md-on-surface-var); margin-bottom: 10px;
+}
+.tutorial-icon { line-height: 1; margin-bottom: 12px; }
+.tutorial-icon .material-icons-round { font-size: 3rem; color: var(--md-primary); }
+.tutorial-title {
+  font-size: 1.3rem; font-weight: 800; margin: 0 0 10px;
+  background: var(--md-gradient); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.tutorial-text {
+  font-size: 1rem; color: var(--md-on-surface); line-height: 1.55;
+  margin: 0 0 18px; min-height: 70px;
+}
+.tutorial-dots { display: flex; justify-content: center; gap: 7px; margin-bottom: 18px; }
+.tutorial-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--md-outline-var); transition: all .2s;
+}
+.tutorial-dot.active { background: var(--md-primary); width: 22px; border-radius: 4px; }
+.tutorial-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tutorial-actions .btn { flex: 1; justify-content: center; }
+.tutorial-skip {
+  background: none; border: none; color: var(--md-on-surface-var);
+  font: 600 .9rem/1 'Inter', sans-serif; cursor: pointer; padding: 10px 4px;
+}
+
 @media (min-width: 480px) {
   .view { max-width: 480px; margin: 0 auto; }
 }

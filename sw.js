@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wordwise-v40';
+const CACHE_NAME = 'wordwise-v41';
 const ASSETS = [
   './',
   './index.html',

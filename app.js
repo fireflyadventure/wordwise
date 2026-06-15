@@ -650,7 +650,7 @@ async function importBackupData(data) {
     setProfiles(profiles);
     if (!getActiveId() && profiles.length) setActiveId(profiles[0].id);
 
-    const sep = ' ';
+    const sep = '\u0000';
     const haveWords = new Set((await dbGetAll('words')).map(w => w.owner + sep + w.word));
     let added = 0;
     for (const w of (data.words || [])) {
@@ -1270,9 +1270,110 @@ async function refreshGameCards() {
   }
 }
 
+// ---- One-time, step-by-step how-to-play guide (per user, per game) ----
+const GAME_TUTORIALS = {
+  chain: {
+    title: 'Word Chain',
+    steps: [
+      { icon: 'link', text: 'Build a chain of words, one after another.' },
+      { icon: 'sync_alt', text: 'Each new word must START with the LAST letter of the word before it.' },
+      { icon: 'keyboard', text: 'See the big letter? Type any real word that starts with it, then press send.' },
+      { icon: 'timer', text: 'Each correct word scores a point. Make the longest chain you can before time runs out!' }
+    ]
+  },
+  image: {
+    title: 'Picture Words',
+    steps: [
+      { icon: 'image', text: 'Look closely at the picture on the screen.' },
+      { icon: 'edit_note', text: 'Type any words you can see — objects, colors, even feelings.' },
+      { icon: 'auto_awesome', text: 'Every correct word earns you points.' },
+      { icon: 'timer', text: 'Add as many words as you can before the timer ends!' }
+    ]
+  },
+  maker: {
+    title: 'Word Maker',
+    steps: [
+      { icon: 'extension', text: 'You are given a group of letters.' },
+      { icon: 'spellcheck', text: 'Make real words using those letters — you can use a letter more than once.' },
+      { icon: 'auto_awesome', text: 'Each new word you find adds to your score.' },
+      { icon: 'timer', text: 'Find as many words as you can before time runs out!' }
+    ]
+  },
+  az: {
+    title: 'A-Z Sprint',
+    steps: [
+      { icon: 'sort_by_alpha', text: 'You start at the letter A.' },
+      { icon: 'looks_5', text: 'Type 5 words that start with that letter.' },
+      { icon: 'arrow_forward', text: 'Finish a letter and you jump to the next one — B, C, D…' },
+      { icon: 'sports_score', text: 'Race as far through the alphabet as you can before time runs out!' }
+    ]
+  }
+};
+
+function tutorialsKey() { return 'apexlex-tutorials-' + getActiveId(); }
+function hasSeenTutorial(game) {
+  try { return (JSON.parse(localStorage.getItem(tutorialsKey())) || []).includes(game); } catch { return false; }
+}
+function markTutorialSeen(game) {
+  let seen = [];
+  try { seen = JSON.parse(localStorage.getItem(tutorialsKey())) || []; } catch {}
+  if (!seen.includes(game)) { seen.push(game); localStorage.setItem(tutorialsKey(), JSON.stringify(seen)); }
+}
+
+let tutorialState = { game: null, step: 0, onDone: null };
+function renderTutorialStep() {
+  const t = GAME_TUTORIALS[tutorialState.game];
+  const step = t.steps[tutorialState.step];
+  const last = tutorialState.step === t.steps.length - 1;
+  document.getElementById('tutorial-step-label').textContent = `${t.title} · How to play`;
+  document.getElementById('tutorial-icon').innerHTML = `<span class="material-icons-round">${step.icon}</span>`;
+  document.getElementById('tutorial-title').textContent = t.title;
+  document.getElementById('tutorial-text').textContent = step.text;
+  document.getElementById('tutorial-dots').innerHTML =
+    t.steps.map((_, i) => `<span class="tutorial-dot${i === tutorialState.step ? ' active' : ''}"></span>`).join('');
+  document.getElementById('tutorial-next').innerHTML = last
+    ? '<span class="material-icons-round">play_arrow</span> Start playing'
+    : 'Next';
+  document.getElementById('tutorial-skip').style.visibility = last ? 'hidden' : 'visible';
+}
+function openTutorial(game, onDone) {
+  if (!GAME_TUTORIALS[game]) { onDone?.(); return; }
+  tutorialState = { game, step: 0, onDone };
+  renderTutorialStep();
+  document.getElementById('tutorial-overlay').classList.add('active');
+}
+function closeTutorial() {
+  document.getElementById('tutorial-overlay').classList.remove('active');
+  if (tutorialState.game) markTutorialSeen(tutorialState.game);
+  const cb = tutorialState.onDone;
+  tutorialState = { game: null, step: 0, onDone: null };
+  cb?.();
+}
+document.getElementById('tutorial-next')?.addEventListener('click', () => {
+  const t = GAME_TUTORIALS[tutorialState.game];
+  if (t && tutorialState.step < t.steps.length - 1) { tutorialState.step++; renderTutorialStep(); }
+  else closeTutorial();
+});
+document.getElementById('tutorial-skip')?.addEventListener('click', closeTutorial);
+
+function pauseGameTimer() { if (gameTimer) { clearInterval(gameTimer); gameTimer = null; } }
+function resumeGameTimer() {
+  if (!gameTimer && currentGame && gameTimeLeft > 0 && document.body.classList.contains('in-game')) startGameTimer();
+}
+
 document.querySelector('.game-grid')?.addEventListener('click', e => {
   const card = e.target.closest('.game-card');
-  if (card) startGame(card.dataset.game);
+  if (!card) return;
+  const type = card.dataset.game;
+  if (hasSeenTutorial(type)) startGame(type);
+  else openTutorial(type, () => startGame(type));   // first time: guide, then start (timer waits)
+});
+
+// Replay the guide mid-game from the header; pause the clock while it's open
+document.getElementById('game-help')?.addEventListener('click', () => {
+  if (!currentGame) return;
+  pauseGameTimer();
+  openTutorial(currentGame, resumeGameTimer);
 });
 
 document.getElementById('game-back')?.addEventListener('click', () => {
