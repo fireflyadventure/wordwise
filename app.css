@@ -759,6 +759,23 @@ body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem;
   font: 600 .9rem/1 'Inter', sans-serif; cursor: pointer; padding: 10px 4px;
 }
 
+/* ---- CONFIRM DIALOG ---- */
+.confirm-overlay {
+  position: fixed; inset: 0; z-index: 1300;
+  background: rgba(20, 16, 60, .55);
+  display: none; align-items: center; justify-content: center; padding: 28px;
+}
+.confirm-overlay.active { display: flex; }
+.confirm-card {
+  background: #fff; border-radius: var(--md-radius-xl);
+  padding: 24px 22px 18px; max-width: 340px; width: 100%;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .3); animation: tut-pop .2s ease;
+}
+.confirm-text { font-size: 1rem; color: var(--md-on-surface); line-height: 1.55; margin: 0 0 22px; }
+.confirm-actions { display: flex; gap: 12px; }
+.confirm-actions .btn { flex: 1; justify-content: center; }
+.btn-danger { background: #DC2626; color: #FFF; }
+
 @media (min-width: 480px) {
   .view { max-width: 480px; margin: 0 auto; }
 }

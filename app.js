@@ -584,12 +584,38 @@ document.getElementById('profile-add-user')?.addEventListener('click', () => {
   document.getElementById('welcome-screen').classList.remove('hidden');
   setTimeout(() => document.getElementById('welcome-name')?.focus(), 200);
 });
+// In-app confirmation (replaces the browser's native confirm, which shows the
+// site URL). Returns a promise that resolves true (confirm) / false (cancel).
+function confirmDialog(message, okText = 'OK') {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('confirm-overlay');
+    const ok = document.getElementById('confirm-ok');
+    const cancel = document.getElementById('confirm-cancel');
+    document.getElementById('confirm-text').textContent = message;
+    ok.textContent = okText;
+    overlay.classList.add('active');
+    const done = val => {
+      overlay.classList.remove('active');
+      ok.removeEventListener('click', onOk);
+      cancel.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onBackdrop);
+      resolve(val);
+    };
+    const onOk = () => done(true);
+    const onCancel = () => done(false);
+    const onBackdrop = e => { if (e.target === overlay) done(false); };
+    ok.addEventListener('click', onOk);
+    cancel.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onBackdrop);
+  });
+}
+
 document.getElementById('profile-users')?.addEventListener('click', async e => {
   const del = e.target.closest('.profile-user-del');
   if (del) {
     const id = del.dataset.del;
     const p = getProfiles().find(x => x.id === id);
-    if (p && confirm(`Remove ${p.name} and all of their words and progress? This cannot be undone.`)) {
+    if (p && await confirmDialog(`Remove ${p.name} and all of their words and progress? This cannot be undone.`, 'Remove')) {
       await deleteProfileById(id);
       showSnackbar(`Removed ${p.name}`);
     }
