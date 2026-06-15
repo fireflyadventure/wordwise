@@ -759,6 +759,27 @@ body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem;
   font: 600 .9rem/1 'Inter', sans-serif; cursor: pointer; padding: 10px 4px;
 }
 
+/* ---- PROFILE PICTURE ---- */
+.profile-pic-wrap { position: relative; width: 88px; height: 88px; margin: 4px auto 0; }
+.profile-pic-avatar {
+  width: 88px; height: 88px; border-radius: 50%; border: none; cursor: pointer;
+  display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 2rem;
+  background: var(--md-gradient); background-size: cover; background-position: center;
+  overflow: hidden; padding: 0;
+}
+.profile-pic-edit {
+  position: absolute; right: -2px; bottom: -2px;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--md-primary); color: #fff; font-size: 17px;
+  display: grid; place-items: center; box-shadow: 0 2px 6px var(--md-shadow);
+  pointer-events: none;
+}
+.profile-pic-remove {
+  display: block; margin: 8px auto 0; background: none; border: none;
+  color: var(--md-on-surface-var); font: 600 .78rem/1 'Inter', sans-serif;
+  cursor: pointer; text-decoration: underline;
+}
+
 /* ---- CONFIRM DIALOG ---- */
 .confirm-overlay {
   position: fixed; inset: 0; z-index: 1300;

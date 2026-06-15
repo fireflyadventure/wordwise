@@ -456,11 +456,25 @@ function showWelcomeScreen() {
   setTimeout(() => document.getElementById('welcome-name')?.focus(), 400);
 }
 
+// Show a profile's photo (if set) or its initial on an avatar element
+function applyAvatarEl(el, profile) {
+  if (!el) return;
+  if (profile?.pic) {
+    el.textContent = '';
+    el.style.backgroundImage = `url('${profile.pic}')`;
+    el.style.backgroundSize = 'cover';
+    el.style.backgroundPosition = 'center';
+  } else {
+    el.textContent = (profile?.name?.[0] || '?').toUpperCase();
+    el.style.backgroundImage = '';
+  }
+}
+
 function applyProfile() {
   const profile = getProfile();
   const avatar = document.getElementById('avatar-btn');
   if (profile?.name) {
-    avatar.textContent = profile.name[0].toUpperCase();
+    applyAvatarEl(avatar, profile);
     avatar.classList.remove('hidden');
   }
   refreshDashboard();
@@ -477,13 +491,67 @@ function renderProfileUsers() {
   const active = getActiveId();
   el.innerHTML = getProfiles().map(p => `
     <div class="profile-user-row${p.id === active ? ' active' : ''}" data-id="${p.id}">
-      <span class="profile-user-avatar">${esc((p.name[0] || '?').toUpperCase())}</span>
+      <span class="profile-user-avatar"${p.pic ? ` style="background-image:url('${p.pic}');background-size:cover;background-position:center"` : ''}>${p.pic ? '' : esc((p.name[0] || '?').toUpperCase())}</span>
       <span class="profile-user-name">${esc(p.name)}</span>
       ${p.id === active
         ? '<span class="material-icons-round profile-user-check">check_circle</span>'
         : `<button class="profile-user-del" data-del="${p.id}" title="Remove ${esc(p.name)}"><span class="material-icons-round">delete_outline</span></button>`}
     </div>`).join('');
 }
+
+// ---- Profile picture (stored as a small downscaled data URL on the profile) ----
+function fileToAvatarDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const scale = Math.max(size / img.width, size / img.height);  // center-crop to a square
+      const w = img.width * scale, h = img.height * scale;
+      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bad image')); };
+    img.src = url;
+  });
+}
+
+function renderProfilePicAvatar() {
+  const p = getProfile();
+  applyAvatarEl(document.getElementById('profile-pic-avatar'), p);
+  document.getElementById('profile-pic-remove')?.classList.toggle('hidden', !p?.pic);
+}
+
+function setActiveProfilePic(pic) {
+  const list = getProfiles();
+  const p = list.find(x => x.id === getActiveId());
+  if (!p) return false;
+  if (pic) p.pic = pic; else delete p.pic;
+  try { setProfiles(list); } catch (e) { return false; }
+  renderProfilePicAvatar();
+  renderProfileUsers();
+  applyProfile();
+  return true;
+}
+
+document.getElementById('profile-pic-avatar')?.addEventListener('click', () => document.getElementById('profile-pic-input').click());
+document.getElementById('profile-pic-input')?.addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const dataUrl = await fileToAvatarDataUrl(file);
+    showSnackbar(setActiveProfilePic(dataUrl) ? 'Photo updated!' : 'Could not save photo — try a smaller image');
+  } catch { showSnackbar('Could not read that image'); }
+});
+document.getElementById('profile-pic-remove')?.addEventListener('click', () => {
+  setActiveProfilePic(null);
+  showSnackbar('Photo removed');
+});
 
 // Reload every view for the active profile
 async function reloadForActiveProfile() {
@@ -565,6 +633,7 @@ document.getElementById('welcome-cancel')?.addEventListener('click', () => {
 // Avatar -> profile sheet
 document.getElementById('avatar-btn')?.addEventListener('click', () => {
   document.getElementById('profile-name').value = getProfile()?.name || '';
+  renderProfilePicAvatar();
   renderProfileUsers();
   document.getElementById('modal-profile').classList.add('active');
 });
@@ -669,7 +738,7 @@ async function importBackupData(data) {
     const have = new Set(profiles.map(p => p.id));
     for (const p of data.profiles) {
       if (p?.id && p?.name && !have.has(p.id)) {
-        profiles.push({ id: p.id, name: p.name, since: p.since || new Date().toISOString() });
+        profiles.push({ id: p.id, name: p.name, since: p.since || new Date().toISOString(), ...(p.pic ? { pic: p.pic } : {}) });
         have.add(p.id);
       }
     }

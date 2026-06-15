@@ -215,6 +215,11 @@
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <h2>Profile</h2>
+    <div class="profile-pic-wrap">
+      <button class="profile-pic-avatar" id="profile-pic-avatar" aria-label="Change profile picture"></button>
+      <span class="profile-pic-edit material-icons-round">photo_camera</span>
+    </div>
+    <button class="profile-pic-remove hidden" id="profile-pic-remove">Remove photo</button>
     <div class="input-wrap">
       <input type="text" id="profile-name" placeholder=" " autocomplete="off" maxlength="20">
       <label>Your name</label>
@@ -252,6 +257,7 @@
 </div>
 
 <input type="file" id="backup-file" accept=".json,application/json" class="hidden">
+<input type="file" id="profile-pic-input" accept="image/*" class="hidden">
 
 <!-- ============ GAME TUTORIAL ============ -->
 <div class="tutorial-overlay" id="tutorial-overlay">
