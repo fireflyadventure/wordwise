@@ -604,12 +604,14 @@ document.getElementById('modal-profile')?.addEventListener('click', e => {
 
 // ===================== BACKUP & RESTORE =====================
 async function exportBackup() {
-  const me = getActiveId();
-  const words = (await dbGetAll('words')).filter(w => w.owner === me).map(({ owner, ...w }) => w);
-  const scores = (await dbGetAll('scores')).filter(s => s.owner === me).map(({ owner, ...s }) => s);
+  // Whole-family backup: every profile and all of their data
+  const profiles = getProfiles();
   const data = {
-    app: 'apexlex', version: 1, exportedAt: new Date().toISOString(),
-    profile: getProfile(), words, scores
+    app: 'apexlex', version: 2, exportedAt: new Date().toISOString(),
+    profiles,
+    words: await dbGetAll('words'),
+    scores: await dbGetAll('scores'),
+    gameWords: await dbGetAll('game_words')
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -619,27 +621,10 @@ async function exportBackup() {
   a.click();
   a.remove();
   URL.revokeObjectURL(a.href);
-  showSnackbar(`Backup saved: ${words.length} words`);
+  showSnackbar(`Backup saved: ${profiles.length} user${profiles.length !== 1 ? 's' : ''}, ${data.words.length} words`);
 }
 
-async function importBackupData(data) {
-  if (!data || data.app !== 'apexlex' || !Array.isArray(data.words)) throw new Error('invalid backup');
-  // Restore-on-first-run: make sure there's a profile to import into
-  if (!getProfile()) createProfile(data.profile?.name || 'Me');
-  const me = getActiveId();
-  let added = 0;
-  for (const w of data.words) {
-    if (w?.word && !allWords.some(x => x.word === w.word)) {
-      await dbPut('words', { ...w, owner: me });
-      added++;
-    }
-  }
-  for (const s of (data.scores || [])) {
-    if (s?.game) {
-      const cur = await dbGet('scores', [me, s.game]);
-      if (!cur || s.score > cur.score) await dbPut('scores', { ...s, owner: me });
-    }
-  }
+async function refreshAfterImport() {
   await loadWords();
   refreshDashboard();
   refreshDictionary();
@@ -647,7 +632,63 @@ async function importBackupData(data) {
   refreshGameCards();
   applyProfile();
   if (getProfile()?.name) document.getElementById('welcome-screen').classList.add('hidden');
-  return added;
+}
+
+async function importBackupData(data) {
+  if (!data || data.app !== 'apexlex') throw new Error('invalid backup');
+
+  // ---- v2: whole-family backup with every profile ----
+  if (data.version >= 2 && Array.isArray(data.profiles)) {
+    const profiles = getProfiles();
+    const have = new Set(profiles.map(p => p.id));
+    for (const p of data.profiles) {
+      if (p?.id && p?.name && !have.has(p.id)) {
+        profiles.push({ id: p.id, name: p.name, since: p.since || new Date().toISOString() });
+        have.add(p.id);
+      }
+    }
+    setProfiles(profiles);
+    if (!getActiveId() && profiles.length) setActiveId(profiles[0].id);
+
+    const sep = ' ';
+    const haveWords = new Set((await dbGetAll('words')).map(w => w.owner + sep + w.word));
+    let added = 0;
+    for (const w of (data.words || [])) {
+      if (w?.owner && w?.word && !haveWords.has(w.owner + sep + w.word)) {
+        await dbPut('words', w); haveWords.add(w.owner + sep + w.word); added++;
+      }
+    }
+    for (const s of (data.scores || [])) {
+      if (s?.owner && s?.game) {
+        const cur = await dbGet('scores', [s.owner, s.game]);
+        if (!cur || s.score > cur.score) await dbPut('scores', s);
+      }
+    }
+    const haveGW = new Set((await dbGetAll('game_words')).map(g => [g.owner, g.word, g.game, g.dateKey].join(sep)));
+    for (const g of (data.gameWords || [])) {
+      const k = [g.owner, g.word, g.game, g.dateKey].join(sep);
+      if (g?.owner && g?.word && !haveGW.has(k)) { await dbAdd('game_words', g); haveGW.add(k); }
+    }
+    await refreshAfterImport();
+    return { users: data.profiles.length, words: added };
+  }
+
+  // ---- v1: legacy single-profile backup -> import into the active profile ----
+  if (!Array.isArray(data.words)) throw new Error('invalid backup');
+  if (!getProfile()) createProfile(data.profile?.name || 'Me');
+  const me = getActiveId();
+  let added = 0;
+  for (const w of data.words) {
+    if (w?.word && !allWords.some(x => x.word === w.word)) { await dbPut('words', { ...w, owner: me }); added++; }
+  }
+  for (const s of (data.scores || [])) {
+    if (s?.game) {
+      const cur = await dbGet('scores', [me, s.game]);
+      if (!cur || s.score > cur.score) await dbPut('scores', { ...s, owner: me });
+    }
+  }
+  await refreshAfterImport();
+  return { users: 1, words: added };
 }
 
 document.getElementById('backup-export')?.addEventListener('click', exportBackup);
@@ -658,9 +699,12 @@ document.getElementById('backup-file')?.addEventListener('change', async e => {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    const added = await importBackupData(data);
+    const res = await importBackupData(data);
     document.getElementById('modal-profile').classList.remove('active');
-    showSnackbar(`Backup restored! ${added} new words added`);
+    const wordTxt = `${res.words} new word${res.words !== 1 ? 's' : ''}`;
+    showSnackbar(res.users > 1
+      ? `Restored ${res.users} users, ${wordTxt}`
+      : `Backup restored! ${wordTxt} added`);
   } catch {
     showSnackbar('That file is not a valid Apexlex backup');
   }
