@@ -1495,6 +1495,7 @@ function startGame(type) {
 
   navigate('game-play');
   document.getElementById('game-score').textContent = '0';
+  updateSoundIcon();
   updateTimerDisplay();
 
   const area = document.getElementById('game-area');
@@ -1612,6 +1613,48 @@ function setupAZGame(seconds) {
   startGameTimer();
 }
 
+// ===================== GAME SOUNDS =====================
+// Short cues generated with the Web Audio API — no audio files, fully offline.
+let audioCtx = null;
+function soundOn() { return localStorage.getItem('apexlex-sound') !== 'off'; }   // default on
+function gameAudio() {
+  if (!soundOn()) return null;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  } catch { return null; }
+}
+function playTone(freq, startAt, dur, type = 'triangle', vol = 0.18) {
+  const ctx = gameAudio();
+  if (!ctx) return;
+  const t = ctx.currentTime + startAt;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + dur + 0.03);
+}
+function soundCorrect()  { playTone(660, 0, 0.12); playTone(990, 0.07, 0.16); }       // bright rising "ding"
+function soundWrong()    { playTone(196, 0, 0.2, 'sawtooth', 0.12); playTone(147, 0.1, 0.22, 'sawtooth', 0.12); }
+function soundGameOver() { [523, 659, 784, 1047].forEach((f, i) => playTone(f, i * 0.13, 0.26, 'triangle', 0.2)); }
+
+function updateSoundIcon() {
+  const el = document.querySelector('#game-sound .material-icons-round');
+  if (el) el.textContent = soundOn() ? 'volume_up' : 'volume_off';
+}
+document.getElementById('game-sound')?.addEventListener('click', () => {
+  localStorage.setItem('apexlex-sound', soundOn() ? 'off' : 'on');
+  updateSoundIcon();
+  if (soundOn()) soundCorrect();   // confirmation blip when turning sound on
+  else showSnackbar('Sound off');
+});
+
 async function submitGameWord() {
   const input = document.getElementById('game-input');
   const raw = input.value;
@@ -1632,6 +1675,7 @@ async function submitGameWord() {
 
   if (multi && (added || skipped)) {
     showSnackbar(`Added ${added} word${added !== 1 ? 's' : ''}${skipped ? `, skipped ${skipped}` : ''}`);
+    if (added) soundCorrect(); else soundWrong();   // one cue for the whole batch
   }
 }
 
@@ -1640,11 +1684,11 @@ async function submitGameWord() {
 async function processGameWord(word, silent) {
   // Reject a word that breaks a game rule: flash a hint when typed alone,
   // or drop a red tag when part of a comma-separated batch.
-  const ruleFail = msg => { if (silent) addWordTag(word, false); else flashInput(msg); return 'skipped'; };
+  const ruleFail = msg => { if (silent) addWordTag(word, false); else { flashInput(msg); soundWrong(); } return 'skipped'; };
 
   if (word.length < 2) { if (!silent) flashInput('Too short'); return 'skipped'; }
   if (!/^[a-z]+$/.test(word)) { if (!silent) flashInput('Letters only!'); return 'skipped'; }
-  if (gameWords.includes(word)) { if (!silent) flashInput('Already used!'); return 'dup'; }
+  if (gameWords.includes(word)) { if (!silent) { flashInput('Already used!'); soundWrong(); } return 'dup'; }
 
   // Game rules first; state changes wait in `commit` until spelling passes
   const gameAtSubmit = currentGame;
@@ -1693,7 +1737,7 @@ async function processGameWord(word, silent) {
   // Real-word gate: reject gibberish/abbreviations (even ones in the word list
   // like "ff"/"oo"); otherwise require the local list or a dictionary hit.
   const reject = () => {
-    if (!silent) { flashInput('Not a real word'); showSnackbar(`"${word}" isn't a real word`); }
+    if (!silent) { flashInput('Not a real word'); showSnackbar(`"${word}" isn't a real word`); soundWrong(); }
     addWordTag(word, false);
     return 'skipped';
   };
@@ -1710,6 +1754,7 @@ async function processGameWord(word, silent) {
   gameScore++;
   document.getElementById('game-score').textContent = gameScore;
   addWordTag(word, true);
+  if (!silent) soundCorrect();
   return 'added';
 }
 
@@ -1778,6 +1823,8 @@ async function endGame(cancelled) {
   gameTimer = null;
 
   if (cancelled) return;
+
+  soundGameOver();
 
   const game = currentGame;
   const me = getActiveId();
