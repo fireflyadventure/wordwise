@@ -322,6 +322,16 @@ function isKnownLocal(w) {
   return false;
 }
 
+// Quick plausibility check to reject gibberish and abbreviations that a
+// permissive dictionary might still list (e.g. "ff", "pp", "vv", "hhh"):
+// a real word has at least one vowel AND one consonant, and never repeats
+// a single letter three or more times in a row.
+function looksLikeWord(w) {
+  return /[aeiouy]/.test(w)
+      && /[bcdfghjklmnpqrstvwxyz]/.test(w)
+      && !/(.)\1\1/.test(w);
+}
+
 // true = real word, false = not found (misspelled), null = can't check (offline)
 async function verifyWordOnline(word) {
   if (spellCache.has(word)) return spellCache.get(word);
@@ -1663,16 +1673,20 @@ async function submitGameWord() {
 
   // Spelling gate: local list answers instantly; otherwise ask the
   // dictionary API when online. Offline unknowns get the benefit of the doubt.
+  // Reject gibberish/abbreviations outright — even ones that slipped into the
+  // word list (e.g. "ff", "oo") — then accept only real words: in the local
+  // list, or confirmed by the online dictionary (no benefit of the doubt).
+  const rejectWord = () => {
+    flashInput('Not a real word');
+    showSnackbar(`"${word}" isn't a real word`);
+    addWordTag(word, false);
+  };
+  if (!looksLikeWord(word)) { rejectWord(); return; }
   if (!isKnownLocal(word)) {
-    const ok = await verifyWordOnline(word);
+    const online = await verifyWordOnline(word);
     // Bail out if the game ended or changed while we were checking
     if (currentGame !== gameAtSubmit || !gameTimer) return;
-    if (ok === false) {
-      flashInput('Check spelling!');
-      showSnackbar(`"${word}" not found in the dictionary`);
-      addWordTag(word, false);
-      return;
-    }
+    if (online !== true) { rejectWord(); return; }
   }
 
   commit();
