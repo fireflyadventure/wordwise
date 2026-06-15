@@ -99,22 +99,59 @@ const COMMON_WORDS = new Set(["the","of","and","a","to","in","is","it","that","w
 
 // ===================== DATABASE =====================
 let db;
+
+// v4 makes the store keys profile-aware: words -> [owner, word],
+// scores -> [owner, game], and game_words gains an `owner` field/index.
+// Existing single-user rows are migrated to `migrationOwnerId`.
+function recreateWithCompoundKey(d, tx, name, keyPath, owner, addIndexes) {
+  if (!d.objectStoreNames.contains(name)) {
+    addIndexes(d.createObjectStore(name, { keyPath }));
+    return;
+  }
+  const old = tx.objectStore(name);
+  if (Array.isArray(old.keyPath)) return;             // already migrated
+  const rows = [];
+  old.openCursor().onsuccess = ev => {
+    const c = ev.target.result;
+    if (c) { rows.push(c.value); c.continue(); return; }
+    d.deleteObjectStore(name);
+    const s = d.createObjectStore(name, { keyPath });
+    addIndexes(s);
+    for (const r of rows) { if (r.owner == null) r.owner = owner; s.add(r); }
+  };
+}
+
 function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open('wordwise', 3);
+    const req = indexedDB.open('wordwise', 4);
     req.onupgradeneeded = e => {
       const d = e.target.result;
-      if (!d.objectStoreNames.contains('words')) {
-        const s = d.createObjectStore('words', { keyPath: 'word' });
-        s.createIndex('date', 'dateAdded');
-      }
-      if (!d.objectStoreNames.contains('scores')) {
-        d.createObjectStore('scores', { keyPath: 'game' });
-      }
+      const tx = e.target.transaction;
+      const owner = migrationOwnerId || 'legacy';
+
+      // game_words: ensure store + owner index, and backfill owner on old rows
+      let gs;
       if (!d.objectStoreNames.contains('game_words')) {
-        const gs = d.createObjectStore('game_words', { autoIncrement: true });
+        gs = d.createObjectStore('game_words', { autoIncrement: true });
         gs.createIndex('dateKey', 'dateKey');
+      } else {
+        gs = tx.objectStore('game_words');
+        gs.openCursor().onsuccess = ev => {
+          const c = ev.target.result;
+          if (!c) return;
+          if (c.value && c.value.owner == null) { const v = c.value; v.owner = owner; c.update(v); }
+          c.continue();
+        };
       }
+      if (!gs.indexNames.contains('owner')) gs.createIndex('owner', 'owner');
+
+      recreateWithCompoundKey(d, tx, 'words', ['owner', 'word'], owner, s => {
+        s.createIndex('date', 'dateAdded');
+        s.createIndex('owner', 'owner');
+      });
+      recreateWithCompoundKey(d, tx, 'scores', ['owner', 'game'], owner, s => {
+        s.createIndex('owner', 'owner');
+      });
     };
     req.onsuccess = e => { db = e.target.result; resolve(db); };
     req.onerror = e => reject(e.target.error);
@@ -358,16 +395,58 @@ document.getElementById('bottom-nav')?.addEventListener('click', e => {
 });
 
 // ===================== USER PROFILE =====================
-function getProfile() {
-  try { return JSON.parse(localStorage.getItem('apexlex-profile')); } catch { return null; }
+// Multiple people can share one install. Each profile has its own words,
+// high scores and game progress — every stored row is tagged with an
+// `owner` equal to the profile id, and reads are filtered by the active id.
+function getProfiles() {
+  try { return JSON.parse(localStorage.getItem('apexlex-profiles')) || []; } catch { return []; }
+}
+function setProfiles(list) { localStorage.setItem('apexlex-profiles', JSON.stringify(list)); }
+function getActiveId() { return localStorage.getItem('apexlex-active') || ''; }
+function setActiveId(id) { localStorage.setItem('apexlex-active', id || ''); }
+function getProfile() { return getProfiles().find(p => p.id === getActiveId()) || null; }
+function newProfileId() {
+  return (self.crypto && crypto.randomUUID) ? crypto.randomUUID()
+    : 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+function createProfile(name) {
+  const list = getProfiles();
+  const p = { id: newProfileId(), name, since: new Date().toISOString() };
+  list.push(p); setProfiles(list); setActiveId(p.id);
+  return p;
+}
+function saveProfile(name) {                 // rename the active profile, or create the first one
+  const list = getProfiles();
+  const p = list.find(x => x.id === getActiveId());
+  if (p) { p.name = name; setProfiles(list); }
+  else createProfile(name);
 }
 
-function saveProfile(name) {
-  const prev = getProfile() || {};
-  localStorage.setItem('apexlex-profile', JSON.stringify({
-    name,
-    since: prev.since || new Date().toISOString()
-  }));
+// Load the active profile's words into memory
+async function loadWords() {
+  try { allWords = (await dbGetAll('words')).filter(w => w.owner === getActiveId()); }
+  catch { allWords = []; }
+}
+
+// Run before openDB: make sure a profile list exists. An existing single-user
+// install (old `apexlex-profile`) is migrated into the first profile, whose id
+// is reused as the owner for that user's existing DB rows.
+let migrationOwnerId = '';
+function ensureProfilesSetup() {
+  const list = getProfiles();
+  if (list.length) {
+    if (!list.find(p => p.id === getActiveId())) setActiveId(list[0].id);
+    migrationOwnerId = getActiveId();
+    return;
+  }
+  let old = null;
+  try { old = JSON.parse(localStorage.getItem('apexlex-profile')); } catch {}
+  if (old && old.name) {
+    const p = { id: newProfileId(), name: old.name, since: old.since || new Date().toISOString() };
+    setProfiles([p]); setActiveId(p.id);
+    migrationOwnerId = p.id;
+  }
+  // brand-new install: no profiles yet — the welcome screen creates the first one
 }
 
 function showWelcomeScreen() {
@@ -387,41 +466,137 @@ function applyProfile() {
   refreshDashboard();
 }
 
-document.getElementById('welcome-start')?.addEventListener('click', () => {
-  const name = document.getElementById('welcome-name').value.trim();
-  if (!name) {
-    document.getElementById('welcome-name').focus();
-    return;
-  }
-  saveProfile(name);
-  document.getElementById('welcome-screen').classList.add('hidden');
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Render the list of users in the profile sheet
+function renderProfileUsers() {
+  const el = document.getElementById('profile-users');
+  if (!el) return;
+  const active = getActiveId();
+  el.innerHTML = getProfiles().map(p => `
+    <div class="profile-user-row${p.id === active ? ' active' : ''}" data-id="${p.id}">
+      <span class="profile-user-avatar">${esc((p.name[0] || '?').toUpperCase())}</span>
+      <span class="profile-user-name">${esc(p.name)}</span>
+      ${p.id === active
+        ? '<span class="material-icons-round profile-user-check">check_circle</span>'
+        : `<button class="profile-user-del" data-del="${p.id}" title="Remove ${esc(p.name)}"><span class="material-icons-round">delete_outline</span></button>`}
+    </div>`).join('');
+}
+
+// Reload every view for the active profile
+async function reloadForActiveProfile() {
+  await loadWords();
   applyProfile();
-  showSnackbar(`Welcome to Apexlex, ${name}!`);
+  refreshDictionary();
+  refreshStats();
+  refreshGameCards();
+}
+
+async function switchProfile(id) {
+  if (!id || id === getActiveId()) return;
+  setActiveId(id);
+  await reloadForActiveProfile();
+  document.getElementById('profile-name').value = getProfile()?.name || '';
+  renderProfileUsers();
+  navigate('dashboard');
+  document.getElementById('modal-profile').classList.remove('active');
+  showSnackbar(`Switched to ${getProfile()?.name}`);
+}
+
+function deleteGameWordsByOwner(id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('game_words', 'readwrite');
+    tx.objectStore('game_words').index('owner').openCursor(IDBKeyRange.only(id)).onsuccess = e => {
+      const c = e.target.result;
+      if (c) { c.delete(); c.continue(); }
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function deleteProfileById(id) {
+  for (const w of (await dbGetAll('words')).filter(w => w.owner === id)) await dbDelete('words', [id, w.word]);
+  for (const s of (await dbGetAll('scores')).filter(s => s.owner === id)) await dbDelete('scores', [id, s.game]);
+  try { await deleteGameWordsByOwner(id); } catch (_) {}
+
+  const remaining = getProfiles().filter(p => p.id !== id);
+  setProfiles(remaining);
+
+  if (getActiveId() === id) {
+    if (remaining.length) {
+      setActiveId(remaining[0].id);
+      await reloadForActiveProfile();
+      document.getElementById('profile-name').value = getProfile()?.name || '';
+    } else {
+      setActiveId('');
+      allWords = [];
+      document.getElementById('avatar-btn').classList.add('hidden');
+      document.getElementById('modal-profile').classList.remove('active');
+      showWelcomeScreen();
+    }
+  }
+  renderProfileUsers();
+}
+
+let welcomeAddMode = false;
+document.getElementById('welcome-start')?.addEventListener('click', async () => {
+  const name = document.getElementById('welcome-name').value.trim();
+  if (!name) { document.getElementById('welcome-name').focus(); return; }
+  createProfile(name);                       // always a NEW profile (first run or "add user")
+  welcomeAddMode = false;
+  document.getElementById('welcome-cancel')?.classList.add('hidden');
+  await reloadForActiveProfile();
+  document.getElementById('welcome-screen').classList.add('hidden');
+  navigate('dashboard');
+  showSnackbar(`Welcome, ${name}!`);
 });
 document.getElementById('welcome-name')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('welcome-start').click();
+});
+document.getElementById('welcome-cancel')?.addEventListener('click', () => {
+  welcomeAddMode = false;
+  document.getElementById('welcome-cancel').classList.add('hidden');
+  document.getElementById('welcome-screen').classList.add('hidden');
 });
 
 // Avatar -> profile sheet
 document.getElementById('avatar-btn')?.addEventListener('click', () => {
   document.getElementById('profile-name').value = getProfile()?.name || '';
+  renderProfileUsers();
   document.getElementById('modal-profile').classList.add('active');
 });
 document.getElementById('profile-save')?.addEventListener('click', () => {
   const name = document.getElementById('profile-name').value.trim();
   if (!name) { document.getElementById('profile-name').focus(); return; }
-  saveProfile(name);
-  document.getElementById('modal-profile').classList.remove('active');
+  saveProfile(name);                          // rename the active profile
+  renderProfileUsers();
   applyProfile();
   showSnackbar('Profile updated!');
 });
-document.getElementById('profile-logout')?.addEventListener('click', () => {
-  localStorage.removeItem('apexlex-profile');
+document.getElementById('profile-add-user')?.addEventListener('click', () => {
+  welcomeAddMode = true;
   document.getElementById('modal-profile').classList.remove('active');
-  document.getElementById('avatar-btn').classList.add('hidden');
-  refreshDashboard();
-  navigate('dashboard');
-  showWelcomeScreen();
+  document.getElementById('welcome-name').value = '';
+  document.getElementById('welcome-cancel')?.classList.remove('hidden');
+  document.getElementById('welcome-screen').classList.remove('hidden');
+  setTimeout(() => document.getElementById('welcome-name')?.focus(), 200);
+});
+document.getElementById('profile-users')?.addEventListener('click', async e => {
+  const del = e.target.closest('.profile-user-del');
+  if (del) {
+    const id = del.dataset.del;
+    const p = getProfiles().find(x => x.id === id);
+    if (p && confirm(`Remove ${p.name} and all of their words and progress? This cannot be undone.`)) {
+      await deleteProfileById(id);
+      showSnackbar(`Removed ${p.name}`);
+    }
+    return;
+  }
+  const row = e.target.closest('.profile-user-row');
+  if (row) switchProfile(row.dataset.id);
 });
 document.getElementById('modal-profile')?.addEventListener('click', e => {
   if (e.target.id === 'modal-profile') document.getElementById('modal-profile').classList.remove('active');
@@ -429,8 +604,9 @@ document.getElementById('modal-profile')?.addEventListener('click', e => {
 
 // ===================== BACKUP & RESTORE =====================
 async function exportBackup() {
-  const words = await dbGetAll('words');
-  const scores = await dbGetAll('scores');
+  const me = getActiveId();
+  const words = (await dbGetAll('words')).filter(w => w.owner === me).map(({ owner, ...w }) => w);
+  const scores = (await dbGetAll('scores')).filter(s => s.owner === me).map(({ owner, ...s }) => s);
   const data = {
     app: 'apexlex', version: 1, exportedAt: new Date().toISOString(),
     profile: getProfile(), words, scores
@@ -448,21 +624,23 @@ async function exportBackup() {
 
 async function importBackupData(data) {
   if (!data || data.app !== 'apexlex' || !Array.isArray(data.words)) throw new Error('invalid backup');
+  // Restore-on-first-run: make sure there's a profile to import into
+  if (!getProfile()) createProfile(data.profile?.name || 'Me');
+  const me = getActiveId();
   let added = 0;
   for (const w of data.words) {
     if (w?.word && !allWords.some(x => x.word === w.word)) {
-      await dbPut('words', w);
+      await dbPut('words', { ...w, owner: me });
       added++;
     }
   }
   for (const s of (data.scores || [])) {
     if (s?.game) {
-      const cur = await dbGet('scores', s.game);
-      if (!cur || s.score > cur.score) await dbPut('scores', s);
+      const cur = await dbGet('scores', [me, s.game]);
+      if (!cur || s.score > cur.score) await dbPut('scores', { ...s, owner: me });
     }
   }
-  if (data.profile?.name) saveProfile(data.profile.name);
-  allWords = await dbGetAll('words');
+  await loadWords();
   refreshDashboard();
   refreshDictionary();
   refreshStats();
@@ -512,7 +690,8 @@ async function refreshDashboard() {
   document.getElementById('greeting').textContent = getGreeting();
   document.getElementById('stat-collected').textContent = allWords.length;
   try {
-    const gw = await dbGetAll('game_words');
+    const me = getActiveId();
+    const gw = (await dbGetAll('game_words')).filter(e => e.owner === me);
     document.getElementById('stat-recalled').textContent = new Set(gw.map(e => e.word)).size;
   } catch(e) {
     document.getElementById('stat-recalled').textContent = '0';
@@ -753,7 +932,7 @@ async function showWordDetail(word, isDaily) {
   document.getElementById('detail-delete').onclick = async () => {
     const saved = allWords.find(w => w.word.toLowerCase() === word.toLowerCase());
     if (saved) {
-      await dbDelete('words', saved.word);
+      await dbDelete('words', [getActiveId(), saved.word]);
       allWords = allWords.filter(w => w.word !== saved.word);
       showSnackbar('Word removed');
     }
@@ -861,6 +1040,7 @@ async function addWord(word) {
 
   const data = {
     word,
+    owner: getActiveId(),
     dateAdded: new Date().toISOString(),
     definition,
     meanings,
@@ -885,7 +1065,7 @@ async function refreshGameLog() {
 
   const period = document.querySelector('#log-period .chip.active')?.dataset.period || 'week';
   let all;
-  try { all = await dbGetAll('game_words'); } catch(e) { all = []; }
+  try { const me = getActiveId(); all = (await dbGetAll('game_words')).filter(e => e.owner === me); } catch(e) { all = []; }
 
   const now = new Date();
   const weekAgo    = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -1040,7 +1220,7 @@ document.getElementById('log-period')?.addEventListener('click', e => {
 // ===================== GAMES =====================
 async function refreshGameCards() {
   for (const g of ['chain','image','maker','az']) {
-    const score = await dbGet('scores', g);
+    const score = await dbGet('scores', [getActiveId(), g]);
     const el = document.getElementById('hs-' + g);
     if (el) el.textContent = score ? `Best: ${score.score}` : '';
   }
@@ -1329,18 +1509,19 @@ async function endGame(cancelled) {
   if (cancelled) return;
 
   const game = currentGame;
+  const me = getActiveId();
 
   // Persist all accepted words to the game log
   if (gameWords.length > 0) {
     const dateKey = new Date().toISOString().slice(0, 10);
     try {
-      await Promise.all(gameWords.map(word => dbAdd('game_words', { word, game, dateKey })));
+      await Promise.all(gameWords.map(word => dbAdd('game_words', { owner: me, word, game, dateKey })));
     } catch(e) {}
   }
 
-  const existing = await dbGet('scores', game);
+  const existing = await dbGet('scores', [me, game]);
   const isHighScore = !existing || gameScore > existing.score;
-  if (isHighScore) await dbPut('scores', { game, score: gameScore, date: new Date().toISOString() });
+  if (isHighScore) await dbPut('scores', { owner: me, game, score: gameScore, date: new Date().toISOString() });
 
   const timeTaken = gameTotalTime - Math.max(gameTimeLeft, 0);
   const tm = Math.floor(timeTaken / 60);
@@ -1446,6 +1627,9 @@ function showSnackbar(msg) {
 
 // ===================== INIT =====================
 async function init() {
+  // Set up the profile list (and migrate an old single-user profile) before
+  // the DB opens, so migrationOwnerId is ready for the v4 upgrade.
+  ensureProfilesSetup();
   // Login check runs first and synchronously - a broken DB can never hide it
   if (!getProfile()?.name) showWelcomeScreen();
   localStorage.removeItem('apexlex-pings'); // leftover from removed email tracking
@@ -1455,7 +1639,7 @@ async function init() {
 
   try {
     await openDB();
-    allWords = await dbGetAll('words');
+    await loadWords();
   } catch (e) {
     allWords = [];
   }

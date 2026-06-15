@@ -543,6 +543,32 @@ body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem;
 }
 .avatar-btn:active { transform: scale(.9); }
 
+/* ---- Multi-user profile switcher ---- */
+.profile-section-label {
+  font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--md-on-surface-var); margin: 22px 0 8px;
+}
+#profile-users { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.profile-user-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 12px; border-radius: var(--md-radius-md); cursor: pointer;
+}
+.profile-user-row:active { background: var(--md-surface-cv); }
+.profile-user-row.active { background: var(--md-surface-cv); cursor: default; }
+.profile-user-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center; color: #fff; font-weight: 700; font-size: .9rem;
+  background: var(--md-gradient);
+}
+.profile-user-name { flex: 1; font-weight: 600; font-size: .95rem; color: var(--md-on-surface); }
+.profile-user-check { color: var(--md-primary); }
+.profile-user-del {
+  background: none; border: none; padding: 6px; cursor: pointer;
+  color: var(--md-on-surface-var); display: flex; border-radius: 50%;
+}
+.profile-user-del:active { color: #DC2626; background: var(--md-surface-cv); }
+#profile-add-user { margin-top: 2px; }
+
 /* ---- BACKUP ---- */
 .backup-row { display: flex; gap: 8px; margin-top: 20px; }
 .backup-row .btn { flex: 1; padding: 12px 8px; font-size: .8rem; }
