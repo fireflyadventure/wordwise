@@ -1614,18 +1614,37 @@ function setupAZGame(seconds) {
 
 async function submitGameWord() {
   const input = document.getElementById('game-input');
-  const word = input.value.trim().toLowerCase();
+  const raw = input.value;
   input.value = '';
-  if (!word || word.length < 2) return;
+  // Let users enter several words at once, separated by commas (or spaces),
+  // so they don't have to tap send for each one.
+  const tokens = raw.toLowerCase().split(/[,\s]+/).map(t => t.trim()).filter(Boolean);
+  if (!tokens.length) return;
+  const multi = tokens.length > 1;
 
-  if (gameWords.includes(word)) {
-    flashInput('Already used!');
-    return;
+  let added = 0, skipped = 0;
+  for (const word of tokens) {
+    const result = await processGameWord(word, multi);
+    if (result === 'ended') break;             // game finished mid-batch
+    if (result === 'added') added++;
+    else if (result === 'skipped') skipped++;  // 'dup' isn't tallied
   }
-  if (!/^[a-z]+$/.test(word)) {
-    flashInput('Letters only!');
-    return;
+
+  if (multi && (added || skipped)) {
+    showSnackbar(`Added ${added} word${added !== 1 ? 's' : ''}${skipped ? `, skipped ${skipped}` : ''}`);
   }
+}
+
+// Validate, score and tag one word. `silent` suppresses the per-word input
+// flash/snackbar (used for batch entry). Returns 'added' | 'skipped' | 'dup' | 'ended'.
+async function processGameWord(word, silent) {
+  // Reject a word that breaks a game rule: flash a hint when typed alone,
+  // or drop a red tag when part of a comma-separated batch.
+  const ruleFail = msg => { if (silent) addWordTag(word, false); else flashInput(msg); return 'skipped'; };
+
+  if (word.length < 2) { if (!silent) flashInput('Too short'); return 'skipped'; }
+  if (!/^[a-z]+$/.test(word)) { if (!silent) flashInput('Letters only!'); return 'skipped'; }
+  if (gameWords.includes(word)) { if (!silent) flashInput('Already used!'); return 'dup'; }
 
   // Game rules first; state changes wait in `commit` until spelling passes
   const gameAtSubmit = currentGame;
@@ -1633,7 +1652,7 @@ async function submitGameWord() {
 
   if (currentGame === 'chain') {
     const needed = gameState.lastWord[gameState.lastWord.length - 1];
-    if (word[0] !== needed) { flashInput(`Must start with "${needed.toUpperCase()}"`); return; }
+    if (word[0] !== needed) return ruleFail(`Must start with "${needed.toUpperCase()}"`);
     commit = () => {
       gameState.lastWord = word;
       document.getElementById('chain-letter').textContent = word[word.length - 1].toUpperCase();
@@ -1644,8 +1663,8 @@ async function submitGameWord() {
       if (gameState.imagePrompt.hints.includes(word)) gameScore += 1; // hint bonus
     };
   } else if (currentGame === 'maker') {
-    if (word.length < 3) { flashInput('3+ letters needed'); return; }
-    if (!canUseSourceLetters(word, gameState.sourceSet)) { flashInput('Letters not available!'); return; }
+    if (word.length < 3) return ruleFail('3+ letters needed');
+    if (!canUseSourceLetters(word, gameState.sourceSet)) return ruleFail('Letters not available!');
     commit = () => {
       if (gameState.possibleWords.includes(word) && !gameState.foundWords.includes(word)) {
         gameState.foundWords.push(word);
@@ -1655,7 +1674,7 @@ async function submitGameWord() {
     };
   } else if (currentGame === 'az') {
     const letter = String.fromCharCode(65 + gameState.currentLetter).toLowerCase();
-    if (word[0] !== letter) { flashInput(`Must start with "${letter.toUpperCase()}"`); return; }
+    if (word[0] !== letter) return ruleFail(`Must start with "${letter.toUpperCase()}"`);
     commit = () => {
       gameState.letterWords[gameState.currentLetter].push(word);
       const count = gameState.letterWords[gameState.currentLetter].length;
@@ -1668,25 +1687,22 @@ async function submitGameWord() {
       }
     };
   } else {
-    return;
+    return 'skipped';
   }
 
-  // Spelling gate: local list answers instantly; otherwise ask the
-  // dictionary API when online. Offline unknowns get the benefit of the doubt.
-  // Reject gibberish/abbreviations outright — even ones that slipped into the
-  // word list (e.g. "ff", "oo") — then accept only real words: in the local
-  // list, or confirmed by the online dictionary (no benefit of the doubt).
-  const rejectWord = () => {
-    flashInput('Not a real word');
-    showSnackbar(`"${word}" isn't a real word`);
+  // Real-word gate: reject gibberish/abbreviations (even ones in the word list
+  // like "ff"/"oo"); otherwise require the local list or a dictionary hit.
+  const reject = () => {
+    if (!silent) { flashInput('Not a real word'); showSnackbar(`"${word}" isn't a real word`); }
     addWordTag(word, false);
+    return 'skipped';
   };
-  if (!looksLikeWord(word)) { rejectWord(); return; }
+  if (!looksLikeWord(word)) return reject();
   if (!isKnownLocal(word)) {
     const online = await verifyWordOnline(word);
     // Bail out if the game ended or changed while we were checking
-    if (currentGame !== gameAtSubmit || !gameTimer) return;
-    if (online !== true) { rejectWord(); return; }
+    if (currentGame !== gameAtSubmit || !gameTimer) return 'ended';
+    if (online !== true) return reject();
   }
 
   commit();
@@ -1694,6 +1710,7 @@ async function submitGameWord() {
   gameScore++;
   document.getElementById('game-score').textContent = gameScore;
   addWordTag(word, true);
+  return 'added';
 }
 
 function addWordTag(word, valid) {
