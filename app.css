@@ -306,23 +306,25 @@ body {
 /* Game Play Screen */
 .game-header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 16px;
+  gap: 6px; margin-bottom: 16px;
 }
 .timer {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 1.2rem; font-weight: 700; color: var(--md-error);
-  background: #FFF; padding: 8px 16px; border-radius: var(--md-radius-xl);
+  display: flex; align-items: center; gap: 5px; white-space: nowrap;
+  font-size: 1.05rem; font-weight: 700; color: var(--md-error);
+  background: #FFF; padding: 7px 13px; border-radius: var(--md-radius-xl);
   box-shadow: 0 1px 4px var(--md-shadow);
 }
-.timer .material-icons-round { font-size: 20px; }
+.timer .material-icons-round { font-size: 18px; }
 .timer.warning { animation: pulse 1s infinite; }
 @keyframes pulse { 50% { transform: scale(1.05); } }
 
 .score-display {
-  font-size: 1.2rem; font-weight: 700; color: var(--md-primary);
-  background: var(--md-primary-container); padding: 8px 16px;
+  white-space: nowrap;
+  font-size: 1.05rem; font-weight: 700; color: var(--md-primary);
+  background: var(--md-primary-container); padding: 7px 13px;
   border-radius: var(--md-radius-xl);
 }
+.game-header .icon-btn { flex-shrink: 0; }
 
 .game-prompt {
   text-align: center; padding: 20px; background: #FFF;
