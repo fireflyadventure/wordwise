@@ -479,7 +479,7 @@ body.kb-compact #view-game-play .game-prompt { padding: 8px 12px; margin-bottom:
 body.kb-compact #view-game-play .game-prompt .prompt-label { font-size: .7rem; margin-bottom: 2px; }
 body.kb-compact #view-game-play .game-prompt .prompt-word { font-size: 1.25rem; }
 body.kb-compact #view-game-play .game-prompt .prompt-image { font-size: 2rem; margin: 2px 0; }
-body.kb-compact #view-game-play .game-prompt .prompt-photo { max-height: 110px; margin: 4px 0; }
+body.kb-compact #view-game-play .game-prompt .prompt-photo { max-height: min(175px, 42vh); min-height: 0; margin: 4px 0; }
 body.kb-compact #view-game-play .game-prompt .prompt-hint { font-size: .7rem; margin-top: 2px; }
 body.kb-compact #view-game-play .game-input-row { margin-bottom: 8px; }
 body.kb-compact #view-game-play .game-input-row input { padding: 10px 14px; }
