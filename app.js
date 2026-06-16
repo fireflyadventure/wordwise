@@ -1217,12 +1217,16 @@ async function refreshGameLog() {
   try { const me = getActiveId(); all = (await dbGetAll('game_words')).filter(e => e.owner === me); } catch(e) { all = []; }
 
   const now = new Date();
-  const weekAgo    = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  // "This week" = the current calendar week (Monday-Sunday), so last week's
+  // days don't bleed into it like a rolling 7-day window would.
+  const monday = new Date(now);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const weekStart  = monday.toISOString().slice(0, 10);
   const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
   const yearStart  = `${now.getFullYear()}-01-01`;
 
   const filtered = all.filter(w => {
-    if (period === 'week')  return w.dateKey >= weekAgo;
+    if (period === 'week')  return w.dateKey >= weekStart;
     if (period === 'month') return w.dateKey >= monthStart;
     return w.dateKey >= yearStart;
   });
@@ -1236,25 +1240,27 @@ async function refreshGameLog() {
   // Bar chart data — always rendered (even with no data) so this section
   // mirrors the Words Collected chart above instead of vanishing
   let labels = [], counts = [];
+  // Count distinct words (not every repeat) so the bars match the unique total above.
+  const uniqOn = key => new Set(filtered.filter(w => w.dateKey === key).map(w => w.word)).size;
+  const uniqIn = prefix => new Set(filtered.filter(w => w.dateKey.startsWith(prefix)).map(w => w.word)).size;
   if (period === 'week') {
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now); d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
-      labels.push(['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]);
-      counts.push(filtered.filter(w => w.dateKey === key).length);
+    const names = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      labels.push(names[i]);
+      counts.push(uniqOn(d.toISOString().slice(0, 10)));
     }
   } else if (period === 'month') {
     const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     for (let i = 1; i <= days; i++) {
       const key = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       labels.push(i);
-      counts.push(filtered.filter(w => w.dateKey === key).length);
+      counts.push(uniqOn(key));
     }
   } else {
     ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].forEach((m, i) => {
-      const key = `${now.getFullYear()}-${String(i+1).padStart(2,'0')}`;
       labels.push(m);
-      counts.push(filtered.filter(w => w.dateKey.startsWith(key)).length);
+      counts.push(uniqIn(`${now.getFullYear()}-${String(i+1).padStart(2,'0')}`));
     });
   }
   const maxC = Math.max(...counts, 1);
@@ -1316,10 +1322,14 @@ function renderChart(period) {
   let labels = [], counts = [];
 
   if (period === 'week') {
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now); d.setDate(d.getDate() - i);
+    // Current calendar week (Monday-Sunday), not a rolling 7-day window
+    const monday = new Date(now);
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    const names = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
       const key = d.toISOString().slice(0, 10);
-      labels.push(['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]);
+      labels.push(names[i]);
       counts.push(allWords.filter(w => w.dateAdded.startsWith(key)).length);
     }
   } else if (period === 'month') {
