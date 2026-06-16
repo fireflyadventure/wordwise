@@ -858,11 +858,6 @@ async function refreshDashboard() {
     </div>
   `).join('');
 
-  document.getElementById('daily-words').addEventListener('click', e => {
-    const el = e.target.closest('.daily-word');
-    if (el) showWordDetail(el.dataset.word, true);
-  });
-
   const recent = [...allWords].sort((a, b) => b.dateAdded.localeCompare(a.dateAdded)).slice(0, 5);
   if (recent.length) {
     document.getElementById('recent-activity').innerHTML = recent.map(w => `
@@ -875,6 +870,14 @@ async function refreshDashboard() {
     document.getElementById('recent-activity').innerHTML = '<p style="font-size:.85rem;color:var(--md-on-surface-var);padding:8px 0">No words added yet. Start collecting!</p>';
   }
 }
+
+// Attached once (not inside refreshDashboard) so the handler isn't duplicated
+// on every render — duplicates caused showWordDetail to fire repeatedly and
+// clobber the "return to" origin.
+document.getElementById('daily-words')?.addEventListener('click', e => {
+  const el = e.target.closest('.daily-word');
+  if (el) showWordDetail(el.dataset.word, true);
+});
 
 // ===================== DICTIONARY =====================
 function refreshDictionary() {
