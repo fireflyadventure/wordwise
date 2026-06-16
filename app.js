@@ -206,6 +206,7 @@ function dbDelete(store, key) {
 // ===================== STATE =====================
 let allWords = [];
 let currentView = 'dashboard';
+let detailFrom = 'dashboard';   // view to return to from Word Detail
 let currentGame = null;
 let gameTimer = null;
 let gameTimeLeft = 300;
@@ -963,6 +964,7 @@ async function lookupWordData(word) {
 }
 
 async function showWordDetail(word, isDaily) {
+  detailFrom = (currentView && currentView !== 'detail') ? currentView : 'dictionary';
   navigate('detail');
   const container = document.getElementById('detail-content');
   container.innerHTML = '<div class="text-center mt-16"><span class="material-icons-round" style="font-size:40px;color:var(--md-outline)">hourglass_top</span><p style="margin-top:8px;color:var(--md-on-surface-var)">Looking up word...</p></div>';
@@ -1085,12 +1087,12 @@ async function showWordDetail(word, isDaily) {
       allWords = allWords.filter(w => w.word !== saved.word);
       showSnackbar('Word removed');
     }
-    navigate('dictionary');
+    navigate(detailFrom);
   };
 }
 
 document.getElementById('detail-back').addEventListener('click', () => {
-  navigate(document.querySelector('.nav-item.active')?.dataset.view || 'dictionary');
+  navigate(detailFrom);   // return to wherever the word was opened from
 });
 
 function speak(text) {
