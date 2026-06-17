@@ -215,27 +215,43 @@
 <div class="modal-overlay" id="modal-profile">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <h2>Profile</h2>
-    <div class="profile-pic-wrap">
-      <button class="profile-pic-avatar" id="profile-pic-avatar" aria-label="Change profile picture"></button>
-      <span class="profile-pic-edit material-icons-round">photo_camera</span>
-    </div>
-    <button class="profile-pic-remove hidden" id="profile-pic-remove">Remove photo</button>
-    <div class="input-wrap">
-      <input type="text" id="profile-name" placeholder=" " autocomplete="off" maxlength="20">
-      <label>Your name</label>
-    </div>
-    <button class="btn btn-primary btn-full" id="profile-save"><span class="material-icons-round">check</span> Save name</button>
+    <!-- MAIN: profile switcher -->
+    <div id="profile-main">
+      <h2>Profile</h2>
+      <button class="profile-hero" id="profile-edit-open">
+        <span class="profile-hero-avatar" id="profile-hero-avatar"></span>
+        <span class="profile-hero-name" id="profile-hero-name"></span>
+        <span class="profile-hero-edit material-icons-round">edit</span>
+      </button>
 
-    <div class="profile-section-label">Switch user</div>
-    <div id="profile-users"></div>
-    <button class="btn btn-outline btn-full" id="profile-add-user"><span class="material-icons-round">person_add</span> Add another user</button>
+      <div class="profile-section-label">Switch profile</div>
+      <div class="profile-others" id="profile-others"></div>
 
-    <div class="backup-row">
-      <button class="btn btn-tonal" id="backup-export"><span class="material-icons-round">download</span> Export Backup</button>
-      <button class="btn btn-tonal" id="backup-import"><span class="material-icons-round">upload</span> Import Backup</button>
+      <div class="backup-row">
+        <button class="btn btn-tonal" id="backup-export"><span class="material-icons-round">download</span> Export Backup</button>
+        <button class="btn btn-tonal" id="backup-import"><span class="material-icons-round">upload</span> Import Backup</button>
+      </div>
+      <p class="backup-note">Each profile's words and progress stay only on this phone. A backup saves <strong>everyone</strong> &mdash; keep one before uninstalling or switching phones, then Import to restore all profiles.</p>
     </div>
-    <p class="backup-note">Each user's words and progress stay only on this phone. A backup saves <strong>everyone</strong> &mdash; keep one before uninstalling or switching phones, then Import to restore all users.</p>
+
+    <!-- EDIT: one profile (rename, photo, delete) -->
+    <div id="profile-edit" class="hidden">
+      <div class="profile-edit-head">
+        <button class="icon-btn" id="profile-edit-back" aria-label="Back"><span class="material-icons-round">arrow_back</span></button>
+        <h2>Edit Profile</h2>
+      </div>
+      <div class="profile-pic-wrap">
+        <button class="profile-pic-avatar" id="profile-pic-avatar" aria-label="Change profile picture"></button>
+        <span class="profile-pic-edit material-icons-round">photo_camera</span>
+      </div>
+      <button class="profile-pic-remove hidden" id="profile-pic-remove">Remove photo</button>
+      <div class="input-wrap">
+        <input type="text" id="profile-name" placeholder=" " autocomplete="off" maxlength="20">
+        <label>Profile name</label>
+      </div>
+      <button class="btn btn-primary btn-full" id="profile-save"><span class="material-icons-round">check</span> Save</button>
+      <button class="profile-delete-btn" id="profile-delete"><span class="material-icons-round">delete_outline</span> Delete this profile</button>
+    </div>
   </div>
 </div>
 

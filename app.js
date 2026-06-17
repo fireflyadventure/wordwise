@@ -123,11 +123,15 @@ function recreateWithCompoundKey(d, tx, name, keyPath, owner, addIndexes) {
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open('wordwise', 4);
+    const req = indexedDB.open('wordwise', 5);
     req.onupgradeneeded = e => {
       const d = e.target.result;
       const tx = e.target.transaction;
       const owner = migrationOwnerId || 'legacy';
+
+      // v5: cache of AI-generated kid-simple definitions, keyed by word.
+      // Word-level (not per-profile) — a definition is the same for everyone.
+      if (!d.objectStoreNames.contains('ai_defs')) d.createObjectStore('ai_defs', { keyPath: 'word' });
 
       // game_words: ensure store + owner index, and backfill owner on old rows
       let gs;
@@ -495,19 +499,36 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// Render the list of users in the profile sheet
-function renderProfileUsers() {
-  const el = document.getElementById('profile-users');
+// Render the profile sheet: active profile card + other profiles + Add tile
+function renderProfileSheet() {
+  const active = getProfile();
+  applyAvatarEl(document.getElementById('profile-hero-avatar'), active);
+  const nameEl = document.getElementById('profile-hero-name');
+  if (nameEl) nameEl.textContent = active?.name || '';
+
+  const el = document.getElementById('profile-others');
   if (!el) return;
-  const active = getActiveId();
-  el.innerHTML = getProfiles().map(p => `
-    <div class="profile-user-row${p.id === active ? ' active' : ''}" data-id="${p.id}">
-      <span class="profile-user-avatar"${p.pic ? ` style="background-image:url('${p.pic}');background-size:cover;background-position:center"` : ''}>${p.pic ? '' : esc((p.name[0] || '?').toUpperCase())}</span>
-      <span class="profile-user-name">${esc(p.name)}</span>
-      ${p.id === active
-        ? '<span class="material-icons-round profile-user-check">check_circle</span>'
-        : `<button class="profile-user-del" data-del="${p.id}" title="Remove ${esc(p.name)}"><span class="material-icons-round">delete_outline</span></button>`}
-    </div>`).join('');
+  const others = getProfiles().filter(p => p.id !== getActiveId());
+  const tiles = others.map(p => `
+    <button class="profile-other" data-id="${p.id}">
+      <span class="profile-other-avatar"${p.pic ? ` style="background-image:url('${p.pic}')"` : ''}>${p.pic ? '' : esc((p.name[0] || '?').toUpperCase())}</span>
+      <span class="profile-other-name">${esc(p.name)}</span>
+    </button>`).join('');
+  el.innerHTML = tiles + `
+    <button class="profile-other profile-add" data-add="1">
+      <span class="profile-other-avatar profile-add-avatar"><span class="material-icons-round">add</span></span>
+      <span class="profile-other-name">Add</span>
+    </button>`;
+}
+
+function showProfilePanel(which) {
+  document.getElementById('profile-main')?.classList.toggle('hidden', which !== 'main');
+  document.getElementById('profile-edit')?.classList.toggle('hidden', which !== 'edit');
+}
+function openProfileEdit() {
+  document.getElementById('profile-name').value = getProfile()?.name || '';
+  renderProfilePicAvatar();
+  showProfilePanel('edit');
 }
 
 // ---- Profile picture (stored as a small downscaled data URL on the profile) ----
@@ -544,7 +565,7 @@ function setActiveProfilePic(pic) {
   if (pic) p.pic = pic; else delete p.pic;
   try { setProfiles(list); } catch (e) { return false; }
   renderProfilePicAvatar();
-  renderProfileUsers();
+  renderProfileSheet();
   applyProfile();
   return true;
 }
@@ -577,8 +598,8 @@ async function switchProfile(id) {
   if (!id || id === getActiveId()) return;
   setActiveId(id);
   await reloadForActiveProfile();
-  document.getElementById('profile-name').value = getProfile()?.name || '';
-  renderProfileUsers();
+  renderProfileSheet();
+  showProfilePanel('main');
   navigate('dashboard');
   document.getElementById('modal-profile').classList.remove('active');
   showSnackbar(`Switched to ${getProfile()?.name}`);
@@ -608,7 +629,6 @@ async function deleteProfileById(id) {
     if (remaining.length) {
       setActiveId(remaining[0].id);
       await reloadForActiveProfile();
-      document.getElementById('profile-name').value = getProfile()?.name || '';
     } else {
       setActiveId('');
       allWords = [];
@@ -617,7 +637,7 @@ async function deleteProfileById(id) {
       showWelcomeScreen();
     }
   }
-  renderProfileUsers();
+  renderProfileSheet();
 }
 
 let welcomeAddMode = false;
@@ -641,29 +661,32 @@ document.getElementById('welcome-cancel')?.addEventListener('click', () => {
   document.getElementById('welcome-screen').classList.add('hidden');
 });
 
-// Avatar -> profile sheet
+// Avatar -> profile sheet (always opens on the main/switcher panel)
 document.getElementById('avatar-btn')?.addEventListener('click', () => {
-  document.getElementById('profile-name').value = getProfile()?.name || '';
-  renderProfilePicAvatar();
-  renderProfileUsers();
+  renderProfileSheet();
+  showProfilePanel('main');
   document.getElementById('modal-profile').classList.add('active');
 });
 document.getElementById('profile-save')?.addEventListener('click', () => {
   const name = document.getElementById('profile-name').value.trim();
   if (!name) { document.getElementById('profile-name').focus(); return; }
   saveProfile(name);                          // rename the active profile
-  renderProfileUsers();
   applyProfile();
+  renderProfileSheet();
+  showProfilePanel('main');
   showSnackbar('Profile updated!');
 });
-document.getElementById('profile-add-user')?.addEventListener('click', () => {
+
+function openAddUser() {
   welcomeAddMode = true;
   document.getElementById('modal-profile').classList.remove('active');
   document.getElementById('welcome-name').value = '';
   document.getElementById('welcome-cancel')?.classList.remove('hidden');
   document.getElementById('welcome-screen').classList.remove('hidden');
   setTimeout(() => document.getElementById('welcome-name')?.focus(), 200);
-});
+}
+document.getElementById('profile-edit-open')?.addEventListener('click', openProfileEdit);
+document.getElementById('profile-edit-back')?.addEventListener('click', () => { renderProfileSheet(); showProfilePanel('main'); });
 // In-app confirmation (replaces the browser's native confirm, which shows the
 // site URL). Returns a promise that resolves true (confirm) / false (cancel).
 function confirmDialog(message, okText = 'OK') {
@@ -690,19 +713,21 @@ function confirmDialog(message, okText = 'OK') {
   });
 }
 
-document.getElementById('profile-users')?.addEventListener('click', async e => {
-  const del = e.target.closest('.profile-user-del');
-  if (del) {
-    const id = del.dataset.del;
-    const p = getProfiles().find(x => x.id === id);
-    if (p && await confirmDialog(`Remove ${p.name} and all of their words and progress? This cannot be undone.`, 'Remove')) {
-      await deleteProfileById(id);
-      showSnackbar(`Removed ${p.name}`);
-    }
-    return;
+// Tap another profile to switch, or the Add tile to create one
+document.getElementById('profile-others')?.addEventListener('click', e => {
+  if (e.target.closest('.profile-add')) { openAddUser(); return; }
+  const tile = e.target.closest('.profile-other[data-id]');
+  if (tile) switchProfile(tile.dataset.id);
+});
+// Delete lives inside Edit Profile (deletes the active profile, with confirmation)
+document.getElementById('profile-delete')?.addEventListener('click', async () => {
+  const p = getProfile();
+  if (!p) return;
+  if (await confirmDialog(`Delete ${p.name} and all of their words and progress? This cannot be undone.`, 'Delete')) {
+    await deleteProfileById(p.id);
+    showSnackbar(`Deleted ${p.name}`);
+    if (getProfile()) { renderProfileSheet(); showProfilePanel('main'); }
   }
-  const row = e.target.closest('.profile-user-row');
-  if (row) switchProfile(row.dataset.id);
 });
 document.getElementById('modal-profile')?.addEventListener('click', e => {
   if (e.target.id === 'modal-profile') document.getElementById('modal-profile').classList.remove('active');
@@ -941,12 +966,42 @@ function simplifyDefinition(text) {
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 }
 
+// ===== AI kid-simple definitions (optional) ================================
+// Deploy the proxy in /ai-proxy (a Cloudflare Worker that holds the API key),
+// then paste its URL here to turn on AI-generated, 10-year-old-simple meanings.
+// Leave empty to stay on the free dictionary only — the app works either way.
+const AI_PROXY_URL = '';
+
+// Returns { word, def, pos } from cache or the proxy, or null on miss/failure.
+// Each unique word costs at most one API call ever (cached in IndexedDB 'ai_defs'
+// on this device; the proxy also caches at the edge across all users).
+async function getKidDefinition(word) {
+  if (!AI_PROXY_URL) return null;
+  word = word.trim().toLowerCase();
+  if (!/^[a-z][a-z'-]*$/.test(word)) return null;
+  try { const hit = await dbGet('ai_defs', word); if (hit && hit.def) return hit; } catch (_) {}
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const r = await fetch(`${AI_PROXY_URL}?word=${encodeURIComponent(word)}`, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!j || !j.def) return null;
+    const entry = { word, def: j.def, pos: j.pos || '' };
+    try { await dbPut('ai_defs', entry); } catch (_) {}
+    return entry;
+  } catch (_) { return null; }
+}
+
 // ---- Word lookup ----------------------------------------------------------
-// Free dictionary (dictionaryapi.dev, no key needed). simplifyDefinition()
-// cleans the wording at render time. Returns {word, phonetic, audioUrl,
-// meanings, sentences} or null when the word can't be fetched.
+// Free dictionary (dictionaryapi.dev, no key needed) for pronunciation, audio
+// and example sentences. When an AI proxy is configured, its kid-simple meaning
+// replaces the shown definition. simplifyDefinition() cleans wording at render
+// time. Returns {word, phonetic, audioUrl, meanings, sentences} or null.
 async function lookupWordData(word) {
   word = word.trim().toLowerCase();
+  let data = null;
   try {
     const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
     if (r.ok) {
@@ -954,7 +1009,7 @@ async function lookupWordData(word) {
       const meanings = entry.meanings || [];
       const sentences = [];
       meanings.forEach(m => m.definitions?.forEach(d => { if (d.example) sentences.push(d.example); }));
-      return {
+      data = {
         word: entry.word || word,
         phonetic: entry.phonetic || entry.phonetics?.[0]?.text || '',
         audioUrl: entry.phonetics?.find(p => p.audio)?.audio || '',
@@ -963,7 +1018,19 @@ async function lookupWordData(word) {
       };
     }
   } catch (_) {}
-  return null;
+
+  // Prefer the kid-simple AI meaning for what's shown; keep dictionary audio/examples.
+  try {
+    const kid = await getKidDefinition(word);
+    if (kid && kid.def) {
+      const pos = kid.pos || data?.meanings?.[0]?.partOfSpeech || 'word';
+      const meanings = [{ partOfSpeech: pos, definitions: [{ definition: kid.def }] }];
+      if (data) data.meanings = meanings;
+      else data = { word, phonetic: '', audioUrl: '', meanings, sentences: [] };
+    }
+  } catch (_) {}
+
+  return data;
 }
 
 async function showWordDetail(word, isDaily) {

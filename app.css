@@ -548,28 +548,54 @@ body.kb-compact #view-game-play .word-tag { padding: 4px 10px; font-size: .7rem;
 /* ---- Multi-user profile switcher ---- */
 .profile-section-label {
   font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
-  color: var(--md-on-surface-var); margin: 22px 0 8px;
+  color: var(--md-on-surface-var); margin: 22px 0 10px;
 }
-#profile-users { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-.profile-user-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 9px 12px; border-radius: var(--md-radius-md); cursor: pointer;
+
+/* Active profile card (tap to edit) */
+.profile-hero {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  background: var(--md-surface-cv); border: none; border-radius: var(--md-radius-lg);
+  padding: 14px 16px; cursor: pointer; margin-top: 4px;
 }
-.profile-user-row:active { background: var(--md-surface-cv); }
-.profile-user-row.active { background: var(--md-surface-cv); cursor: default; }
-.profile-user-avatar {
-  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-  display: grid; place-items: center; color: #fff; font-weight: 700; font-size: .9rem;
-  background: var(--md-gradient);
+.profile-hero-avatar {
+  width: 60px; height: 60px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 1.6rem;
+  background: var(--md-gradient); background-size: cover; background-position: center;
 }
-.profile-user-name { flex: 1; font-weight: 600; font-size: .95rem; color: var(--md-on-surface); }
-.profile-user-check { color: var(--md-primary); }
-.profile-user-del {
-  background: none; border: none; padding: 6px; cursor: pointer;
-  color: var(--md-on-surface-var); display: flex; border-radius: 50%;
+.profile-hero-name { flex: 1; font-size: 1.15rem; font-weight: 700; color: var(--md-on-surface); }
+.profile-hero-edit { color: var(--md-on-surface-var); font-size: 22px; }
+
+/* Other profiles + Add tile */
+.profile-others { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 6px; }
+.profile-other {
+  background: none; border: none; cursor: pointer; padding: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; width: 60px;
 }
-.profile-user-del:active { color: #DC2626; background: var(--md-surface-cv); }
-#profile-add-user { margin-top: 2px; }
+.profile-other-avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 1.3rem;
+  background: var(--md-gradient); background-size: cover; background-position: center;
+}
+.profile-other:active .profile-other-avatar { transform: scale(.94); }
+.profile-other-name {
+  font-size: .76rem; color: var(--md-on-surface); max-width: 60px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.profile-add-avatar {
+  background: none; border: 2px dashed var(--md-outline-var); color: var(--md-on-surface-var);
+}
+.profile-add-avatar .material-icons-round { font-size: 26px; }
+
+/* Edit Profile panel */
+.profile-edit-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.profile-edit-head h2 { margin: 0; }
+.profile-delete-btn {
+  width: 100%; margin-top: 20px; background: none; border: none; cursor: pointer;
+  color: #DC2626; font: 600 .95rem/1 'Inter', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px;
+  border-radius: var(--md-radius-md);
+}
+.profile-delete-btn:active { background: rgba(220, 38, 38, .08); }
 
 /* ---- BACKUP ---- */
 .backup-row { display: flex; gap: 8px; margin-top: 20px; }
